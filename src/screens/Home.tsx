@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { PDFDownloadLink } from "@react-pdf/renderer";
-import { Download, FileText, CheckCircle2 } from "lucide-react";
+import { Download, FileText, CheckCircle2, LogOut, User as UserIcon } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 import { MASTER_PROFILE } from "../shared/constants/masterProfile";
 import type { ResumeData } from "../domain/entities/Resume";
 import { ResumeWebPreview } from "../presentation/components/ResumeWebPreview";
@@ -122,6 +123,7 @@ const PreviewArea = styled.div`
 `;
 
 export const Home: React.FC = () => {
+  const { user, signOut } = useAuth();
   const [resumeData] = useState<ResumeData>(MASTER_PROFILE);
 
   return (
@@ -137,6 +139,22 @@ export const Home: React.FC = () => {
         </div>
 
         <ActionsGroup>
+          {user?.email && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                fontSize: "0.82rem",
+                color: "#555",
+                fontWeight: 500,
+              }}
+            >
+              <UserIcon size={16} />
+              <span>{user.email}</span>
+            </div>
+          )}
+
           <Badge>
             <CheckCircle2 size={16} /> 100% Compatível com ATS
           </Badge>
@@ -153,6 +171,11 @@ export const Home: React.FC = () => {
               </Button>
             )}
           </PDFDownloadLink>
+
+          <Button onClick={signOut} title="Encerrar Sessão">
+            <LogOut size={16} />
+            Sair
+          </Button>
         </ActionsGroup>
       </TopBar>
 
