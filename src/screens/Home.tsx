@@ -10,8 +10,14 @@ import { ResumeWebPreview } from "../presentation/components/ResumeWebPreview";
 import { ResumePDFTemplate } from "../presentation/templates/ResumePDFTemplate";
 import { ProfileEditor } from "../presentation/components/ProfileEditor";
 import { JobAnalyzer } from "../presentation/components/JobAnalyzer";
+import { ApplicationsKanban } from "../presentation/components/ApplicationsKanban";
+import { DashboardMetrics } from "../presentation/components/DashboardMetrics";
+import { EmailSenderModal } from "../presentation/components/EmailSenderModal";
 import { ResumeVersionsRepository } from "../infrastructure/supabase/ResumeVersionsRepository";
+import { JobApplicationsRepository, type ApplicationItem } from "../infrastructure/supabase/JobApplicationsRepository";
 import type { TailoredResumeResult } from "../domain/rules/ResumeTailoringEngine";
+import type { ApplicationStatus } from "../shared/types/database.types";
+import { LayoutDashboard, Kanban, Mail } from "lucide-react";
 
 const Container = styled.div`
   max-width: 1200px;
@@ -159,7 +165,8 @@ const PreviewArea = styled.div`
 export const Home: React.FC = () => {
   const { user, signOut } = useAuth();
   const [resumeData, setResumeData] = useState<ResumeData>(MASTER_PROFILE);
-  const [currentTab, setCurrentTab] = useState<"preview" | "edit" | "analyze">("preview");
+  const [currentTab, setCurrentTab] = useState<"preview" | "edit" | "analyze" | "kanban" | "metrics" | "email">("preview");
+  const [applications, setApplications] = useState<ApplicationItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
   // Carrega ou inicializa o perfil mestre sincronizado no Supabase
@@ -168,8 +175,22 @@ export const Home: React.FC = () => {
       MasterProfileRepository.getOrCreateProfile(user.id).then((profile) => {
         setResumeData(profile);
       });
+      JobApplicationsRepository.listApplications(user.id).then((apps) => {
+        setApplications(apps);
+      });
     }
   }, [user?.id]);
+
+  const handleStatusChange = async (appId: string, newStatus: ApplicationStatus) => {
+    try {
+      await JobApplicationsRepository.updateStatus(appId, newStatus);
+      setApplications((prev) =>
+        prev.map((a) => (a.id === appId ? { ...a, status: newStatus } : a))
+      );
+    } catch {
+      alert("Erro ao atualizar status da candidatura.");
+    }
+  };
 
   const handleSaveProfile = async (updated: ResumeData) => {
     if (!user?.id) return;
@@ -202,6 +223,16 @@ export const Home: React.FC = () => {
           atsScore: 92,
           validationReport: tailoredResult.validationReport,
         });
+
+        // Cria também a candidatura no CRM se houver vaga gerada
+        const newApp = await JobApplicationsRepository.createApplication({
+          userId: user.id,
+          jobTitle: tailoredResult.tailoredResume.personalInfo.targetRoleOrTags,
+          companyName: "Empresa da Vaga",
+          jobDescription: tailoredResult.atsOptimizationSummary,
+        });
+
+        setApplications((prev) => [newApp as any, ...prev]);
       } catch (err) {
         console.error("Erro ao persistir versão no Supabase:", err);
       }
@@ -275,6 +306,24 @@ export const Home: React.FC = () => {
           <Sparkles size={16} /> Analisar Vaga com IA
         </button>
         <button
+          className={currentTab === "kanban" ? "active" : ""}
+          onClick={() => setCurrentTab("kanban")}
+        >
+          <Kanban size={16} /> CRM Candidaturas ({applications.length})
+        </button>
+        <button
+          className={currentTab === "metrics" ? "active" : ""}
+          onClick={() => setCurrentTab("metrics")}
+        >
+          <LayoutDashboard size={16} /> Dashboard
+        </button>
+        <button
+          className={currentTab === "email" ? "active" : ""}
+          onClick={() => setCurrentTab("email")}
+        >
+          <Mail size={16} /> Disparo Outlook
+        </button>
+        <button
           className={currentTab === "edit" ? "active" : ""}
           onClick={() => setCurrentTab("edit")}
         >
@@ -282,7 +331,20 @@ export const Home: React.FC = () => {
         </button>
       </TabsBar>
 
-      {currentTab === "analyze" ? (
+      {currentTab === "kanban" ? (
+        <ApplicationsKanban
+          applications={applications}
+          onStatusChange={handleStatusChange}
+        />
+      ) : currentTab === "metrics" ? (
+        <DashboardMetrics applications={applications} />
+      ) : currentTab === "email" ? (
+        <EmailSenderModal
+          userId={user?.id || ""}
+          candidateName={resumeData.personalInfo.fullName.replace(/\s+/g, " ").trim()}
+          onSent={() => setCurrentTab("kanban")}
+        />
+      ) : currentTab === "analyze" ? (
         <JobAnalyzer
           masterProfile={resumeData}
           onGenerateResume={handleGenerateTailored}
