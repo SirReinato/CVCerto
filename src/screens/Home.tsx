@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { PDFDownloadLink } from "@react-pdf/renderer";
-import { Download, FileText, CheckCircle2, LogOut, User as UserIcon } from "lucide-react";
+import { Download, FileText, CheckCircle2, LogOut, User as UserIcon, Edit3, Eye } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { MasterProfileRepository } from "../infrastructure/supabase/MasterProfileRepository";
 import { MASTER_PROFILE } from "../shared/constants/masterProfile";
 import type { ResumeData } from "../domain/entities/Resume";
 import { ResumeWebPreview } from "../presentation/components/ResumeWebPreview";
 import { ResumePDFTemplate } from "../presentation/templates/ResumePDFTemplate";
+import { ProfileEditor } from "../presentation/components/ProfileEditor";
 
 const Container = styled.div`
   max-width: 1200px;
@@ -42,6 +44,7 @@ const ActionsGroup = styled.div`
   display: flex;
   gap: 12px;
   align-items: center;
+  flex-wrap: wrap;
 `;
 
 const Button = styled.button<{ $primary?: boolean }>`
@@ -75,6 +78,34 @@ const Badge = styled.span`
   border-radius: 20px;
   font-size: 0.8rem;
   font-weight: 600;
+`;
+
+const TabsBar = styled.div`
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 4px;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: none;
+    border: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #666666;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+
+    &.active {
+      color: #1e1e1e;
+      background-color: #ffffff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+  }
 `;
 
 const MainContent = styled.div`
@@ -124,17 +155,42 @@ const PreviewArea = styled.div`
 
 export const Home: React.FC = () => {
   const { user, signOut } = useAuth();
-  const [resumeData] = useState<ResumeData>(MASTER_PROFILE);
+  const [resumeData, setResumeData] = useState<ResumeData>(MASTER_PROFILE);
+  const [currentTab, setCurrentTab] = useState<"preview" | "edit">("preview");
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Carrega ou inicializa o perfil mestre sincronizado no Supabase
+  useEffect(() => {
+    if (user?.id) {
+      MasterProfileRepository.getOrCreateProfile(user.id).then((profile) => {
+        setResumeData(profile);
+      });
+    }
+  }, [user?.id]);
+
+  const handleSaveProfile = async (updated: ResumeData) => {
+    if (!user?.id) return;
+    setIsSaving(true);
+    try {
+      await MasterProfileRepository.saveProfile(user.id, updated);
+      setResumeData(updated);
+      setCurrentTab("preview");
+    } catch (err) {
+      alert("Erro ao salvar alterações no Supabase.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <Container>
       <TopBar>
         <div>
           <h1>
-            <FileText size={24} /> CV Certo - Template Oficial
+            <FileText size={24} /> CV Certo - Perfil Mestre
           </h1>
           <p style={{ margin: "4px 0 0 0", fontSize: "0.85rem", color: "#666" }}>
-            Design System idêntico aos currículos oficiais de Renato de França Lima.
+            Base de fatos reais protegida e padronizada no Design System oficial.
           </p>
         </div>
 
@@ -179,36 +235,56 @@ export const Home: React.FC = () => {
         </ActionsGroup>
       </TopBar>
 
-      <MainContent>
-        <Sidebar>
-          <h2>Especificações do Template</h2>
-          <p>
-            Este template reproduz com fidelidade milimétrica a tipografia, proporções,
-            linhas e marcadores geométricos presentes nos seus 3 modelos de currículo.
-          </p>
-          <ul>
-            <li>
-              <strong>Tipografia:</strong> Helvetica / Sans-serif de alta legibilidade.
-            </li>
-            <li>
-              <strong>Header:</strong> Quadrados pretos decorativos e nome em caixa alta
-              espaçado.
-            </li>
-            <li>
-              <strong>Padrão ATS:</strong> O arquivo PDF é gerado via código vetorial,
-              permitindo que recrutadores e robôs extraiam cada palavra-chave sem erros.
-            </li>
-            <li>
-              <strong>Fonte da Verdade:</strong> Carregado com o Perfil Mestre real
-              (Brasfort, Truly Informática, UCB, UniCesumar, ITIL, Azure).
-            </li>
-          </ul>
-        </Sidebar>
+      <TabsBar>
+        <button
+          className={currentTab === "preview" ? "active" : ""}
+          onClick={() => setCurrentTab("preview")}
+        >
+          <Eye size={16} /> Visualizar Currículo
+        </button>
+        <button
+          className={currentTab === "edit" ? "active" : ""}
+          onClick={() => setCurrentTab("edit")}
+        >
+          <Edit3 size={16} /> Editar Perfil Mestre (Fatos Reais)
+        </button>
+      </TabsBar>
 
-        <PreviewArea>
-          <ResumeWebPreview data={resumeData} />
-        </PreviewArea>
-      </MainContent>
+      {currentTab === "edit" ? (
+        <ProfileEditor
+          data={resumeData}
+          onSave={handleSaveProfile}
+          isSaving={isSaving}
+        />
+      ) : (
+        <MainContent>
+          <Sidebar>
+            <h2>Base da Verdade (Fatos Reais)</h2>
+            <p>
+              Estes dados estão persistidos na tabela <code>master_facts</code> do seu Supabase.
+              Nenhum processo da IA poderá gerar experiências ou certificações fora deste conjunto.
+            </p>
+            <ul>
+              <li>
+                <strong>Experiências:</strong> {resumeData.experiences.length} cadastradas
+              </li>
+              <li>
+                <strong>Formações:</strong> {resumeData.education.length} registradas
+              </li>
+              <li>
+                <strong>Certificações:</strong> {resumeData.certifications.length} validadas
+              </li>
+              <li>
+                <strong>Habilidades:</strong> {resumeData.skills.length} categorias
+              </li>
+            </ul>
+          </Sidebar>
+
+          <PreviewArea>
+            <ResumeWebPreview data={resumeData} />
+          </PreviewArea>
+        </MainContent>
+      )}
     </Container>
   );
 };
