@@ -52,6 +52,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MiB para suportar bundle com PDF e Recharts
         // Tudo o que for gerado no build entra no precache (funciona offline)
         globPatterns: ["**/*.{js,css,html,png,svg,ico}"],
         cleanupOutdatedCaches: true,
