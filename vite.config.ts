@@ -13,11 +13,11 @@ export default defineConfig({
       },
       includeAssets: ["icons/apple-touch-icon.png", "offline.html"],
       manifest: {
-        name: "Meu Sistema",
-        short_name: "Sistema",
-        description: "Sistema Web Instalável",
+        name: "CV Certo - Gerador e Gestor de Candidaturas",
+        short_name: "CV Certo",
+        description: "Plataforma Inteligente de Gestão de Candidaturas e Currículos Otimizados",
         lang: "pt-BR",
-        theme_color: "#612D53",
+        theme_color: "#1E1E1E",
         background_color: "#FFFFFF",
         display: "standalone",
         orientation: "any",
@@ -55,8 +55,13 @@ export default defineConfig({
         // Tudo o que for gerado no build entra no precache (funciona offline)
         globPatterns: ["**/*.{js,css,html,png,svg,ico}"],
         cleanupOutdatedCaches: true,
-        // Cache em tempo de execução: só para o que NÃO está no precache
+        // Cache em tempo de execução
         runtimeCaching: [
+          {
+            // NUNCA cachear requisições ao Supabase / Edge Functions (sempre direto na rede)
+            urlPattern: ({ url }) => url.hostname.includes("supabase.co"),
+            handler: "NetworkOnly",
+          },
           {
             // Imagens externas (CDN, uploads etc.)
             urlPattern: ({ request }) => request.destination === "image",
