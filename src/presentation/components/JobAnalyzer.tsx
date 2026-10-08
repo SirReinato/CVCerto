@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import styled from "styled-components";
-import { Sparkles, AlertTriangle, Target, Briefcase, FileSearch } from "lucide-react";
+import { Sparkles, AlertTriangle, Target, Briefcase, FileSearch, ArrowRightCircle, ShieldCheck } from "lucide-react";
 import type { ResumeData } from "../../domain/entities/Resume";
 import type { JobAnalysis } from "../../domain/entities/JobAnalysis";
 import { AiJobAnalysisService } from "../../infrastructure/ai/AiJobAnalysisService";
+import { ResumeTailoringEngine, type TailoredResumeResult } from "../../domain/rules/ResumeTailoringEngine";
 
 interface JobAnalyzerProps {
   masterProfile: ResumeData;
   onAnalysisComplete?: (analysis: JobAnalysis) => void;
+  onGenerateResume?: (tailoredResult: TailoredResumeResult) => void;
 }
 
 const Card = styled.div`
@@ -157,7 +159,11 @@ const TagCloud = styled.div`
   }
 `;
 
-export const JobAnalyzer: React.FC<JobAnalyzerProps> = ({ masterProfile, onAnalysisComplete }) => {
+export const JobAnalyzer: React.FC<JobAnalyzerProps> = ({
+  masterProfile,
+  onAnalysisComplete,
+  onGenerateResume,
+}) => {
   const [jobTitle, setJobTitle] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [jobDescription, setJobDescription] = useState("");
@@ -299,6 +305,22 @@ export const JobAnalyzer: React.FC<JobAnalyzerProps> = ({ masterProfile, onAnaly
               {analysisResult.recommendedHighlight}
             </p>
           </div>
+
+          {onGenerateResume && (
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+              <SubmitButton
+                type="button"
+                onClick={() => {
+                  const tailored = ResumeTailoringEngine.generate(masterProfile, analysisResult);
+                  onGenerateResume(tailored);
+                }}
+              >
+                <ShieldCheck size={18} />
+                Gerar Currículo Otimizado (Validado Anti-Invenção)
+                <ArrowRightCircle size={18} />
+              </SubmitButton>
+            </div>
+          )}
         </ResultsGrid>
       )}
     </Card>

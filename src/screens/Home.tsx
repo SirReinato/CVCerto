@@ -10,6 +10,8 @@ import { ResumeWebPreview } from "../presentation/components/ResumeWebPreview";
 import { ResumePDFTemplate } from "../presentation/templates/ResumePDFTemplate";
 import { ProfileEditor } from "../presentation/components/ProfileEditor";
 import { JobAnalyzer } from "../presentation/components/JobAnalyzer";
+import { ResumeVersionsRepository } from "../infrastructure/supabase/ResumeVersionsRepository";
+import type { TailoredResumeResult } from "../domain/rules/ResumeTailoringEngine";
 
 const Container = styled.div`
   max-width: 1200px;
@@ -183,6 +185,29 @@ export const Home: React.FC = () => {
     }
   };
 
+  const handleGenerateTailored = async (tailoredResult: TailoredResumeResult) => {
+    if (!tailoredResult.validationReport.isValid) {
+      alert("Alerta de Invenção: O validador determinístico bloqueou a geração por inconsistência com o Perfil Mestre.");
+      return;
+    }
+
+    setResumeData(tailoredResult.tailoredResume);
+    setCurrentTab("preview");
+
+    if (user?.id) {
+      try {
+        await ResumeVersionsRepository.saveVersion({
+          userId: user.id,
+          content: tailoredResult.tailoredResume,
+          atsScore: 92,
+          validationReport: tailoredResult.validationReport,
+        });
+      } catch (err) {
+        console.error("Erro ao persistir versão no Supabase:", err);
+      }
+    }
+  };
+
   return (
     <Container>
       <TopBar>
@@ -258,7 +283,10 @@ export const Home: React.FC = () => {
       </TabsBar>
 
       {currentTab === "analyze" ? (
-        <JobAnalyzer masterProfile={resumeData} />
+        <JobAnalyzer
+          masterProfile={resumeData}
+          onGenerateResume={handleGenerateTailored}
+        />
       ) : currentTab === "edit" ? (
         <ProfileEditor
           data={resumeData}
