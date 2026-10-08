@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { PDFDownloadLink } from "@react-pdf/renderer";
-import { Download, FileText, CheckCircle2, LogOut, User as UserIcon, Edit3, Eye } from "lucide-react";
+import { Download, FileText, CheckCircle2, LogOut, User as UserIcon, Edit3, Eye, Sparkles } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { MasterProfileRepository } from "../infrastructure/supabase/MasterProfileRepository";
 import { MASTER_PROFILE } from "../shared/constants/masterProfile";
@@ -9,6 +9,7 @@ import type { ResumeData } from "../domain/entities/Resume";
 import { ResumeWebPreview } from "../presentation/components/ResumeWebPreview";
 import { ResumePDFTemplate } from "../presentation/templates/ResumePDFTemplate";
 import { ProfileEditor } from "../presentation/components/ProfileEditor";
+import { JobAnalyzer } from "../presentation/components/JobAnalyzer";
 
 const Container = styled.div`
   max-width: 1200px;
@@ -156,7 +157,7 @@ const PreviewArea = styled.div`
 export const Home: React.FC = () => {
   const { user, signOut } = useAuth();
   const [resumeData, setResumeData] = useState<ResumeData>(MASTER_PROFILE);
-  const [currentTab, setCurrentTab] = useState<"preview" | "edit">("preview");
+  const [currentTab, setCurrentTab] = useState<"preview" | "edit" | "analyze">("preview");
   const [isSaving, setIsSaving] = useState(false);
 
   // Carrega ou inicializa o perfil mestre sincronizado no Supabase
@@ -175,7 +176,7 @@ export const Home: React.FC = () => {
       await MasterProfileRepository.saveProfile(user.id, updated);
       setResumeData(updated);
       setCurrentTab("preview");
-    } catch (err) {
+    } catch {
       alert("Erro ao salvar alterações no Supabase.");
     } finally {
       setIsSaving(false);
@@ -187,10 +188,10 @@ export const Home: React.FC = () => {
       <TopBar>
         <div>
           <h1>
-            <FileText size={24} /> CV Certo - Perfil Mestre
+            <FileText size={24} /> CV Certo - Perfil Mestre & IA
           </h1>
           <p style={{ margin: "4px 0 0 0", fontSize: "0.85rem", color: "#666" }}>
-            Base de fatos reais protegida e padronizada no Design System oficial.
+            Base de fatos reais protegida e motor de inteligência artificial ATS.
           </p>
         </div>
 
@@ -243,6 +244,12 @@ export const Home: React.FC = () => {
           <Eye size={16} /> Visualizar Currículo
         </button>
         <button
+          className={currentTab === "analyze" ? "active" : ""}
+          onClick={() => setCurrentTab("analyze")}
+        >
+          <Sparkles size={16} /> Analisar Vaga com IA
+        </button>
+        <button
           className={currentTab === "edit" ? "active" : ""}
           onClick={() => setCurrentTab("edit")}
         >
@@ -250,7 +257,9 @@ export const Home: React.FC = () => {
         </button>
       </TabsBar>
 
-      {currentTab === "edit" ? (
+      {currentTab === "analyze" ? (
+        <JobAnalyzer masterProfile={resumeData} />
+      ) : currentTab === "edit" ? (
         <ProfileEditor
           data={resumeData}
           onSave={handleSaveProfile}
