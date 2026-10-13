@@ -9,11 +9,11 @@ import {
 } from "@react-pdf/renderer";
 import type { ResumeData } from "../../domain/entities/Resume";
 
-// Cores e medidas extraídas exatamente do layout oficial
+// Cores e medidas extraídas com fidelidade geométrica extrema
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 32,
-    paddingBottom: 32,
+    paddingTop: 48,
+    paddingBottom: 40,
     paddingHorizontal: 40,
     fontFamily: "Helvetica",
     fontSize: 9.5,
@@ -21,46 +21,126 @@ const styles = StyleSheet.create({
     lineHeight: 1.45,
     backgroundColor: "#FFFFFF",
   },
-  // Marcadores geométricos decorativos superiores
-  topDecorationContainer: {
+
+  // 1. TOPO GEOMÉTRICO (Faixa cinza contínua + 4 retângulos pretos)
+  topDecoration: {
     position: "absolute",
-    top: 24,
-    left: 24,
-    flexDirection: "row",
-    alignItems: "flex-start",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 58,
   },
-  squareLarge: {
+  topGreyBar: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 26,
+    backgroundColor: "#3A3A3A",
+  },
+  topBlackBlock1: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: 54,
+    height: 26,
+    backgroundColor: "#0A0A0A",
+  },
+  topBlackBlock2: {
+    position: "absolute",
+    top: 18,
+    left: 58,
     width: 22,
-    height: 22,
-    backgroundColor: "#1E1E1E",
-    marginRight: 6,
+    height: 16,
+    backgroundColor: "#0A0A0A",
   },
-  squareSmall: {
-    width: 9,
+  topBlackBlock3: {
+    position: "absolute",
+    top: 32,
+    left: 16,
+    width: 22,
+    height: 11,
+    backgroundColor: "#0A0A0A",
+  },
+  topBlackBlock4: {
+    position: "absolute",
+    top: 45,
+    left: 44,
+    width: 12,
+    height: 11,
+    backgroundColor: "#0A0A0A",
+  },
+
+  // 2. RODAPÉ GEOMÉTRICO (Faixa preta contínua + 3 retângulos cinzas no canto direito)
+  bottomDecoration: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 28,
+  },
+  bottomBlackBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 20,
+    backgroundColor: "#0A0A0A",
+  },
+  bottomGreyBlock1: {
+    position: "absolute",
+    bottom: 16,
+    right: 76,
+    width: 14,
     height: 9,
-    backgroundColor: "#1E1E1E",
-    marginTop: 13,
+    backgroundColor: "#4E4E4E",
   },
+  bottomGreyBlock2: {
+    position: "absolute",
+    bottom: 12,
+    right: 44,
+    width: 18,
+    height: 13,
+    backgroundColor: "#4E4E4E",
+  },
+  bottomGreyBlock3: {
+    position: "absolute",
+    bottom: 3,
+    right: 82,
+    width: 22,
+    height: 15,
+    backgroundColor: "#363636",
+  },
+
+  // 3. CABEÇALHO DO CANDIDATO
   header: {
     alignItems: "center",
-    marginBottom: 14,
-    marginTop: 4,
+    marginBottom: 12,
+    marginTop: 10,
+  },
+  headerBanner: {
+    backgroundColor: "#F2EDE4",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    width: "100%",
+    alignItems: "center",
+    marginBottom: 8,
   },
   fullName: {
     fontSize: 16,
     fontFamily: "Helvetica-Bold",
-    letterSpacing: 3.5,
+    letterSpacing: 4,
     textAlign: "center",
-    marginBottom: 6,
     color: "#111111",
   },
   targetRole: {
     fontSize: 8.5,
-    fontFamily: "Helvetica",
+    fontFamily: "Helvetica-Bold",
     letterSpacing: 1.2,
     textAlign: "center",
     color: "#333333",
-    marginBottom: 8,
+    marginBottom: 6,
+    textTransform: "uppercase",
   },
   contactText: {
     fontSize: 8.5,
@@ -72,15 +152,17 @@ const styles = StyleSheet.create({
   horizontalDivider: {
     borderBottomWidth: 1.2,
     borderBottomColor: "#1E1E1E",
-    marginVertical: 10,
+    marginVertical: 8,
   },
+
+  // 4. SEÇÕES E TEXTOS
   sectionTitle: {
     fontSize: 10.5,
     fontFamily: "Helvetica-Bold",
     letterSpacing: 1.5,
     color: "#111111",
-    marginTop: 10,
-    marginBottom: 6,
+    marginTop: 8,
+    marginBottom: 5,
     textTransform: "uppercase",
   },
   summaryText: {
@@ -88,8 +170,10 @@ const styles = StyleSheet.create({
     textAlign: "justify",
     lineHeight: 1.45,
     color: "#222222",
-    marginBottom: 8,
+    marginBottom: 6,
   },
+
+  // 5. BLOCOS COM CONTROLE DE QUEBRA DE PÁGINA (wrap={false})
   jobBlock: {
     marginBottom: 8,
   },
@@ -116,14 +200,18 @@ const styles = StyleSheet.create({
     lineHeight: 1.35,
     textAlign: "justify",
   },
-  skillCategoryTitle: {
+
+  // Subcategorias (sem bullet, em destaque Title Case)
+  subCategoryTitle: {
     fontSize: 9.2,
     fontFamily: "Helvetica-Bold",
     color: "#111111",
     marginTop: 4,
     marginBottom: 2,
   },
-  educationItem: {
+
+  // Formação acadêmica
+  educationBlock: {
     marginBottom: 6,
   },
   educationDegree: {
@@ -136,6 +224,34 @@ const styles = StyleSheet.create({
     color: "#444444",
     paddingLeft: 8,
   },
+
+  // Projetos
+  projectBlock: {
+    marginBottom: 6,
+  },
+  projectHeader: {
+    fontSize: 9.2,
+    fontFamily: "Helvetica-Bold",
+    color: "#111111",
+  },
+  projectDescriptionRow: {
+    flexDirection: "row",
+    paddingLeft: 10,
+    marginTop: 1.5,
+  },
+  dashPoint: {
+    width: 10,
+    fontSize: 9,
+    color: "#111111",
+    fontFamily: "Helvetica-Bold",
+  },
+  projectDescriptionText: {
+    flex: 1,
+    fontSize: 9,
+    color: "#222222",
+    lineHeight: 1.35,
+    textAlign: "justify",
+  },
 });
 
 interface ResumePDFTemplateProps {
@@ -146,18 +262,35 @@ export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) =>
   return (
     <Document title={`Curriculo_${data.personalInfo.fullName.replace(/\s+/g, "_")}`}>
       <Page size="A4" style={styles.page}>
-        {/* Adorno Geométrico Superior */}
-        <View style={styles.topDecorationContainer}>
-          <View style={styles.squareLarge} />
-          <View style={styles.squareSmall} />
+        {/* 1. TOPO GEOMÉTRICO FIXO (Repete em todas as páginas) */}
+        <View style={styles.topDecoration} fixed>
+          <View style={styles.topGreyBar} />
+          <View style={styles.topBlackBlock1} />
+          <View style={styles.topBlackBlock2} />
+          <View style={styles.topBlackBlock3} />
+          <View style={styles.topBlackBlock4} />
         </View>
 
-        {/* Cabeçalho */}
+        {/* 2. RODAPÉ GEOMÉTRICO FIXO (Repete em todas as páginas) */}
+        <View style={styles.bottomDecoration} fixed>
+          <View style={styles.bottomBlackBar} />
+          <View style={styles.bottomGreyBlock1} />
+          <View style={styles.bottomGreyBlock2} />
+          <View style={styles.bottomGreyBlock3} />
+        </View>
+
+        {/* 3. CABEÇALHO */}
         <View style={styles.header}>
-          <Text style={styles.fullName}>{data.personalInfo.fullName}</Text>
-          <Text style={styles.targetRole}>{data.personalInfo.targetRoleOrTags}</Text>
+          <View style={styles.headerBanner}>
+            <Text style={styles.fullName}>
+              {data.personalInfo.fullName.toUpperCase()}
+            </Text>
+          </View>
+          <Text style={styles.targetRole}>
+            {data.personalInfo.targetRoleOrTags.toUpperCase()}
+          </Text>
           <Text style={styles.contactText}>
-            {data.personalInfo.age ? `${data.personalInfo.age}\n` : ""}
+            {data.personalInfo.age ? `${data.personalInfo.age.toUpperCase()}\n` : ""}
             {data.personalInfo.city}
             {"\n"}
             {data.personalInfo.phone}
@@ -168,18 +301,18 @@ export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) =>
 
         <View style={styles.horizontalDivider} />
 
-        {/* Resumo Profissional / Objetivo */}
-        <View>
+        {/* 4. RESUMO PROFISSIONAL */}
+        <View minPresenceAhead={30}>
           <Text style={styles.sectionTitle}>RESUMO PROFISSIONAL</Text>
           <Text style={styles.summaryText}>{data.summary}</Text>
         </View>
 
-        {/* Experiências Profissionais */}
+        {/* 5. EXPERIÊNCIAS PROFISSIONAIS */}
         {data.experiences.length > 0 && (
-          <View>
+          <View minPresenceAhead={30}>
             <Text style={styles.sectionTitle}>EXPERIÊNCIAS PROFISSIONAIS</Text>
             {data.experiences.map((exp) => (
-              <View key={exp.id} style={styles.jobBlock}>
+              <View key={exp.id} style={styles.jobBlock} wrap={false}>
                 <Text style={styles.jobHeader}>
                   {exp.role.toUpperCase()} | {exp.company} - {exp.period}
                 </Text>
@@ -194,12 +327,12 @@ export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) =>
           </View>
         )}
 
-        {/* Formação Acadêmica */}
+        {/* 6. FORMAÇÃO ACADÊMICA */}
         {data.education.length > 0 && (
-          <View>
+          <View minPresenceAhead={30}>
             <Text style={styles.sectionTitle}>FORMAÇÃO ACADÊMICA</Text>
             {data.education.map((edu) => (
-              <View key={edu.id} style={styles.educationItem}>
+              <View key={edu.id} style={styles.educationBlock} wrap={false}>
                 <Text style={styles.educationDegree}>
                   • {edu.degree} – {edu.status}
                 </Text>
@@ -209,14 +342,14 @@ export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) =>
           </View>
         )}
 
-        {/* Certificações */}
+        {/* 7. CERTIFICAÇÕES */}
         {data.certifications.length > 0 && (
-          <View>
+          <View minPresenceAhead={30}>
             <Text style={styles.sectionTitle}>CERTIFICAÇÕES</Text>
             {data.certifications
               .filter((c) => c.category === "principal")
               .map((cert) => (
-                <View key={cert.id} style={styles.bulletRow}>
+                <View key={cert.id} style={styles.bulletRow} wrap={false}>
                   <Text style={styles.bulletPoint}>•</Text>
                   <Text style={styles.bulletContent}>
                     {cert.name} - {cert.statusOrYear}
@@ -225,8 +358,8 @@ export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) =>
               ))}
 
             {data.certifications.some((c) => c.category === "complementar") && (
-              <>
-                <Text style={[styles.skillCategoryTitle, { marginTop: 6 }]}>
+              <View wrap={false} style={{ marginTop: 4 }}>
+                <Text style={styles.subCategoryTitle}>
                   Certificações Complementares
                 </Text>
                 {data.certifications
@@ -239,18 +372,18 @@ export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) =>
                       </Text>
                     </View>
                   ))}
-              </>
+              </View>
             )}
           </View>
         )}
 
-        {/* Conhecimentos Técnicos / Competências */}
+        {/* 8. CONHECIMENTOS TÉCNICOS E OPERACIONAIS */}
         {data.skills.length > 0 && (
-          <View>
+          <View minPresenceAhead={30}>
             <Text style={styles.sectionTitle}>CONHECIMENTOS TÉCNICOS E OPERACIONAIS</Text>
             {data.skills.map((cat) => (
-              <View key={cat.id} style={{ marginBottom: 4 }}>
-                <Text style={styles.skillCategoryTitle}>{cat.categoryName}</Text>
+              <View key={cat.id} style={{ marginBottom: 4 }} wrap={false}>
+                <Text style={styles.subCategoryTitle}>{cat.categoryName}</Text>
                 {cat.skills.map((skill, sIdx) => (
                   <View key={sIdx} style={styles.bulletRow}>
                     <Text style={styles.bulletPoint}>•</Text>
@@ -262,35 +395,42 @@ export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) =>
           </View>
         )}
 
-        {/* Projetos e Portfólio (se houver) */}
+        {/* 9. PROJETOS E PORTFÓLIO */}
         {data.projects && data.projects.length > 0 && (
-          <View>
+          <View minPresenceAhead={30}>
             <Text style={styles.sectionTitle}>PROJETOS E PORTFÓLIO</Text>
-            {data.projects.map((proj) => (
-              <View key={proj.id} style={{ marginBottom: 4 }}>
-                <Text style={styles.skillCategoryTitle}>
-                  • {proj.name} - {proj.stack}{" "}
-                  {proj.link && (
-                    <Link
-                      src={proj.link.startsWith("http") ? proj.link : `https://${proj.link}`}
-                      style={{ fontSize: 8, color: "#1e1e1e", textDecoration: "underline" }}
-                    >
-                      [Ver Projeto]
-                    </Link>
-                  )}
-                </Text>
-                <View style={styles.bulletRow}>
-                  <Text style={styles.bulletPoint}>◦</Text>
-                  <Text style={styles.bulletContent}>{proj.description}</Text>
+            {data.projects.map((proj) => {
+              // Garante que a linha de descrição comece com '-'
+              const desc = proj.description.trim().startsWith("-")
+                ? proj.description.trim().substring(1).trim()
+                : proj.description.trim();
+
+              return (
+                <View key={proj.id} style={styles.projectBlock} wrap={false}>
+                  <Text style={styles.projectHeader}>
+                    • {proj.name} - {proj.stack}{" "}
+                    {proj.link && (
+                      <Link
+                        src={proj.link.startsWith("http") ? proj.link : `https://${proj.link}`}
+                        style={{ fontSize: 8, color: "#1e1e1e", textDecoration: "underline" }}
+                      >
+                        [Ver Projeto]
+                      </Link>
+                    )}
+                  </Text>
+                  <View style={styles.projectDescriptionRow}>
+                    <Text style={styles.dashPoint}>-</Text>
+                    <Text style={styles.projectDescriptionText}>{desc}</Text>
+                  </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         )}
 
-        {/* Idiomas */}
+        {/* 10. IDIOMAS */}
         {data.languages && data.languages.length > 0 && (
-          <View>
+          <View minPresenceAhead={20} wrap={false}>
             <Text style={styles.sectionTitle}>IDIOMAS</Text>
             {data.languages.map((lang, lIdx) => (
               <Text key={lIdx} style={{ fontSize: 9, color: "#222222", paddingLeft: 6 }}>
