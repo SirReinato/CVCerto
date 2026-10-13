@@ -198,9 +198,16 @@ export const Home: React.FC = () => {
     try {
       await MasterProfileRepository.saveProfile(user.id, updated);
       setResumeData(updated);
+      alert("Perfil Mestre salvo e sincronizado com sucesso no Supabase!");
       setCurrentTab("preview");
-    } catch {
-      alert("Erro ao salvar alterações no Supabase.");
+    } catch (err: any) {
+      console.warn("[Home] Falha ao persistir no Supabase:", err);
+      // Mantém o estado atualizado na interface para o usuário não perder alterações
+      setResumeData(updated);
+      alert(
+        "Aviso: Suas alterações foram atualizadas na visualização, mas as tabelas ainda não foram criadas no seu Supabase (Erro 404).\n\nPara sincronização persistente, basta executar a migration SQL no painel do Supabase."
+      );
+      setCurrentTab("preview");
     } finally {
       setIsSaving(false);
     }

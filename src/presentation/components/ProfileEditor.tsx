@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
-import { Plus, Trash2, Save, User, Briefcase, GraduationCap, Award } from "lucide-react";
-import type { ResumeData, Experience, Education, Certification } from "../../domain/entities/Resume";
+import { Plus, Trash2, Save, User, Briefcase, GraduationCap, Award, FolderGit2 } from "lucide-react";
+import type { ResumeData, Experience, Education, Certification, Project } from "../../domain/entities/Resume";
 
 interface ProfileEditorProps {
   data: ResumeData;
@@ -220,6 +220,36 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ data, onSave, isSa
     setProfile((prev) => ({
       ...prev,
       certifications: prev.certifications.filter((cert) => cert.id !== id),
+    }));
+  };
+
+  // Projetos e Portfólio
+  const handleAddProject = () => {
+    const newProj: Project = {
+      id: crypto.randomUUID(),
+      name: "Novo Projeto",
+      stack: "Tecnologia / Stack Utilizada",
+      description: "Descrição das atividades desenvolvidas, integrações e impactos.",
+    };
+    setProfile((prev) => ({
+      ...prev,
+      projects: [...(prev.projects || []), newProj],
+    }));
+  };
+
+  const handleDeleteProject = (id: string) => {
+    setProfile((prev) => ({
+      ...prev,
+      projects: (prev.projects || []).filter((proj) => proj.id !== id),
+    }));
+  };
+
+  const handleUpdateProject = (id: string, field: keyof Project, value: string) => {
+    setProfile((prev) => ({
+      ...prev,
+      projects: (prev.projects || []).map((proj) =>
+        proj.id === id ? { ...proj, [field]: value } : proj
+      ),
     }));
   };
 
@@ -467,6 +497,51 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ data, onSave, isSa
         ))}
         <AddButton onClick={handleAddCertification}>
           <Plus size={14} /> Adicionar Certificação
+        </AddButton>
+      </div>
+
+      {/* 6. Projetos e Portfólio */}
+      <div>
+        <SectionHeader>
+          <FolderGit2 size={18} />
+          <h2>Projetos e Portfólio ({(profile.projects || []).length})</h2>
+        </SectionHeader>
+        {(profile.projects || []).map((proj) => (
+          <CardItem key={proj.id}>
+            <DeleteButton onClick={() => handleDeleteProject(proj.id)} title="Remover projeto">
+              <Trash2 size={16} />
+            </DeleteButton>
+            <FieldGrid $cols={2}>
+              <FormGroup>
+                <label>Nome do Projeto</label>
+                <input
+                  value={proj.name}
+                  onChange={(e) => handleUpdateProject(proj.id, "name", e.target.value)}
+                  placeholder="Ex: N1_GuidePro"
+                />
+              </FormGroup>
+              <FormGroup>
+                <label>Stack / Tecnologias Utilizadas</label>
+                <input
+                  value={proj.stack}
+                  onChange={(e) => handleUpdateProject(proj.id, "stack", e.target.value)}
+                  placeholder="Ex: Next.js ou Laravel + React"
+                />
+              </FormGroup>
+              <FormGroup style={{ gridColumn: "1 / -1" }}>
+                <label>Descrição do Projeto / Atividades</label>
+                <textarea
+                  rows={2}
+                  value={proj.description}
+                  onChange={(e) => handleUpdateProject(proj.id, "description", e.target.value)}
+                  placeholder="Descrição sucinta das funcionalidades, componentes e desafios resolvidos"
+                />
+              </FormGroup>
+            </FieldGrid>
+          </CardItem>
+        ))}
+        <AddButton onClick={handleAddProject}>
+          <Plus size={14} /> Adicionar Projeto ao Portfólio
         </AddButton>
       </div>
 
