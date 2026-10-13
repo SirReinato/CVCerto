@@ -86,9 +86,9 @@ Retorne OBRIGATORIAMENTE um JSON estritamente compatível com o seguinte formato
 }
 `;
 
-    // Chamada à API do Gemini utilizando modelo 2.5 Flash com resposta forçada em JSON
+    // Chamada à API do Gemini utilizando modelo gemini-3-flash-preview com resposta forçada em JSON
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
