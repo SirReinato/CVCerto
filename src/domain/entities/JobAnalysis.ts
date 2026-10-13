@@ -38,6 +38,7 @@ export const JobAnalysisSchema = z.object({
     ),
     preparationTips: z.array(z.string()),     // Dicas de estudo e postura técnica
   }).optional(),
+  suggestedCoverLetter: z.string().optional(), // Mensagem/apresentação concisa e inteligente personalizada para o e-mail da vaga
 });
 
 export type JobAnalysis = z.infer<typeof JobAnalysisSchema>;

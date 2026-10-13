@@ -112,19 +112,29 @@ export const EmailSenderModal: React.FC<EmailSenderModalProps> = ({
   const [selectedAttachmentType, setSelectedAttachmentType] = useState<string>(
     selectedApp?.id ? selectedApp.id : "master"
   );
+  const getInitialSubject = () => {
+    if (selectedApp?.jobs?.title) {
+      return `Candidatura: ${selectedApp.jobs.title}`;
+    }
+    return `Candidatura: Analista de Suporte N2/N3`;
+  };
+
+  const getInitialBody = () => {
+    if (selectedApp?.cover_letter) {
+      return selectedApp.cover_letter;
+    }
+    const role = selectedApp?.jobs?.title || "Analista de Suporte";
+    const company = selectedApp?.jobs?.companies?.name || "sua empresa";
+    return `Prezado(a) Recrutador(a),\n\nIdentifiquei grande aderência entre os desafios da oportunidade de ${role} na ${company} e minha trajetória profissional. Atuo na sustentação e suporte técnico corporativo avançado (N2/N3), com sólida experiência na administração do ecossistema Microsoft 365, Active Directory, automação de fluxos e resolução de incidentes críticos orientados a rigorosos SLAs e práticas ITIL 4.\n\nPossuo certificações Microsoft Azure Fundamentals (AZ-900) e ITIL 4 Foundation, graduação em Análise e Desenvolvimento de Sistemas e pós-graduação em Inteligência Artificial em andamento. Compartilho em anexo meu currículo profissional detalhado e coloco-me à inteira disposição para conversarmos!\n\nAtenciosamente,\n${candidateName}\n(61) 9935-3163 | rfranca.lima@outlook.com`;
+  };
+
   const [toEmail, setToEmail] = useState(defaultEmail || "");
-  const [subject, setSubject] = useState(
-    selectedApp?.jobs?.title
-      ? `Candidatura: ${selectedApp.jobs.title} - ${candidateName}`
-      : `Candidatura - ${candidateName} (Currículo Anexo)`
-  );
-  const [body, setBody] = useState(
-    `Prezado(a) Recrutador(a),\n\nCompartilho em anexo meu currículo profissional atualizado com foco e certificações alinhadas à vaga.\n\nFico à disposição para uma conversa!\n\nAtenciosamente,\n${candidateName}\n(61) 9935-3163 | rfranca.lima@outlook.com`
-  );
+  const [subject, setSubject] = useState(getInitialSubject());
+  const [body, setBody] = useState(getInitialBody());
   const [isSending, setIsSending] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Calcula o anexo atualmente selecionado
+  // Calcula o anexo atualmente selecionado (O nome do arquivo é OBRIGATORIAMENTE cv-renato-de-franca-lima.pdf)
   const activeAttachment = React.useMemo(() => {
     if (selectedAttachmentType === "master") {
       return {
@@ -135,12 +145,9 @@ export const EmailSenderModal: React.FC<EmailSenderModalProps> = ({
     }
     const foundApp = availableApplications.find((a) => a.id === selectedAttachmentType);
     if (foundApp) {
-      const sanitizedTitle = (foundApp.jobs?.title || "vaga")
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, "-");
       return {
-        label: `CV Específico: ${foundApp.jobs?.title || "Vaga"} (${foundApp.jobs?.companies?.name || "Empresa"})`,
-        fileName: `cv-renato-de-franca-lima-${sanitizedTitle}.pdf`,
+        label: `CV Personalizado da Vaga: ${foundApp.jobs?.title || "Vaga"} (${foundApp.jobs?.companies?.name || "Empresa"})`,
+        fileName: "cv-renato-de-franca-lima.pdf",
         data: foundApp.tailored_resume || masterProfile,
       };
     }
@@ -195,9 +202,19 @@ export const EmailSenderModal: React.FC<EmailSenderModalProps> = ({
             setSelectedAttachmentType(e.target.value);
             const found = availableApplications.find((a) => a.id === e.target.value);
             if (found?.jobs?.title) {
-              setSubject(`Candidatura: ${found.jobs.title} - ${candidateName}`);
+              setSubject(`Candidatura: ${found.jobs.title}`);
+              if (found.cover_letter) {
+                setBody(found.cover_letter);
+              } else {
+                setBody(
+                  `Prezado(a) Recrutador(a),\n\nIdentifiquei grande aderência entre os desafios da oportunidade de ${found.jobs.title} na ${found.jobs.companies?.name || "sua empresa"} e minha trajetória profissional. Atuo na sustentação e suporte técnico corporativo avançado (N2/N3), com sólida experiência na administração do ecossistema Microsoft 365, Active Directory, automação de fluxos e resolução de incidentes críticos com cumprimento rigoroso de SLAs e práticas ITIL 4.\n\nPossuo certificações Microsoft Azure Fundamentals (AZ-900) e ITIL 4 Foundation, graduação em Análise e Desenvolvimento de Sistemas e pós-graduação em Inteligência Artificial em andamento. Compartilho em anexo meu currículo profissional detalhado e fico à disposição para conversarmos!\n\nAtenciosamente,\nRenato de França Lima\n(61) 9935-3163 | rfranca.lima@outlook.com`
+                );
+              }
             } else if (e.target.value === "master") {
-              setSubject(`Candidatura - ${candidateName} (Currículo Oficial N2/N3)`);
+              setSubject(`Candidatura: Analista de Suporte N2/N3`);
+              setBody(
+                `Prezado(a) Recrutador(a),\n\nCompartilho em anexo meu currículo profissional atualizado com foco em Suporte Técnico Avançado (N2/N3), Infraestrutura Corporativa, Microsoft 365, Active Directory e certificações AZ-900 e ITIL 4.\n\nFico à disposição para uma conversa!\n\nAtenciosamente,\nRenato de França Lima\n(61) 9935-3163 | rfranca.lima@outlook.com`
+              );
             }
           }}
         >

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import styled from "styled-components";
-import { Sparkles, AlertTriangle, Target, Briefcase, FileSearch, ArrowRightCircle, ShieldCheck } from "lucide-react";
+import styled, { keyframes } from "styled-components";
+import { Sparkles, AlertTriangle, Target, Briefcase, FileSearch, ArrowRightCircle, ShieldCheck, Hourglass } from "lucide-react";
 import type { ResumeData } from "../../domain/entities/Resume";
 import type { JobAnalysis } from "../../domain/entities/JobAnalysis";
 import { AiJobAnalysisService } from "../../infrastructure/ai/AiJobAnalysisService";
@@ -14,6 +14,70 @@ interface JobAnalyzerProps {
     jobDetails?: { jobTitle: string; companyName: string; jobDescription: string; analysis: JobAnalysis }
   ) => void;
 }
+
+const rotateAnimation = keyframes`
+  0% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(180deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+`;
+
+const pulseAnimation = keyframes`
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+`;
+
+const FloatingLoadingToast = styled.div`
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background-color: #1e1e1e;
+  color: #ffffff;
+  padding: 16px 20px;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  z-index: 9999;
+  border-left: 5px solid #0078d4;
+  animation: ${pulseAnimation} 2s infinite ease-in-out;
+  max-width: 360px;
+
+  .icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4da3ff;
+    animation: ${rotateAnimation} 2.5s infinite ease-in-out;
+  }
+
+  .text-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    strong {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    span {
+      font-size: 0.78rem;
+      color: #bbbbbb;
+    }
+  }
+`;
 
 const Card = styled.div`
   background-color: #ffffff;
@@ -411,6 +475,18 @@ export const JobAnalyzer: React.FC<JobAnalyzerProps> = ({
             </div>
           )}
         </ResultsGrid>
+      )}
+
+      {isAnalyzing && (
+        <FloatingLoadingToast>
+          <div className="icon-wrapper">
+            <Hourglass size={24} />
+          </div>
+          <div className="text-content">
+            <strong>Inteligência Artificial Analisando Vaga...</strong>
+            <span>Cruzando requisitos com seu perfil e gerando estratégia ATS</span>
+          </div>
+        </FloatingLoadingToast>
       )}
     </Card>
   );

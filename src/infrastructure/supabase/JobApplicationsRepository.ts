@@ -30,6 +30,7 @@ export interface ApplicationItem {
   notes: string | null;
   created_at: string;
   tailored_resume?: ResumeData | null;
+  cover_letter?: string | null;
   jobs?: {
     title: string;
     raw_description: string;

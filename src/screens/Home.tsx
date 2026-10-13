@@ -246,6 +246,7 @@ export const Home: React.FC = () => {
       notes: tailoredResult.atsOptimizationSummary,
       created_at: new Date().toISOString(),
       tailored_resume: tailoredResult.tailoredResume,
+      cover_letter: jobDetails?.analysis?.suggestedCoverLetter || null,
       jobs: {
         title: jobDetails?.jobTitle || "Analista de Suporte N2/N3",
         raw_description: jobDetails?.jobDescription || "",
@@ -334,14 +335,7 @@ export const Home: React.FC = () => {
 
           <PDFDownloadLink
             document={<ResumePDFTemplate data={previewResume} />}
-            fileName={
-              previewResume === masterResume
-                ? "cv-renato-de-franca-lima.pdf"
-                : `cv-renato-de-franca-lima-${previewResume.personalInfo.targetRoleOrTags
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]/g, "-")
-                    .slice(0, 30)}.pdf`
-            }
+            fileName="cv-renato-de-franca-lima.pdf"
             style={{ textDecoration: "none" }}
           >
             {({ loading }) => (

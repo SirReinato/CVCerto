@@ -110,7 +110,8 @@ Retorne OBRIGATORIAMENTE um JSON estritamente compatível com o seguinte formato
       "Esteja preparado para dar exemplos reais de incidentes resolvidos sob pressão na Brasfort e Truly.",
       "Destaque sua proatividade em automatizar fluxos na plataforma Neppo."
     ]
-  }
+  },
+  "suggestedCoverLetter": "Prezado(a) Recrutador(a),\n\nIdentifiquei grande aderência entre os requisitos da vaga de [Título da Vaga] na [Empresa] e minha trajetória profissional. Atuo na sustentação e suporte técnico avançado (N2/N3), com sólida experiência na administração de ambientes Microsoft 365, Active Directory corporativo e resolução de incidentes críticos orientados a rigorosos SLAs e práticas ITIL 4. Possuo certificações Microsoft Azure Fundamentals (AZ-900), ITIL 4 Foundation, graduação em ADS e pós em IA em andamento. Compartilho em anexo meu currículo detalhado e coloco-me à disposição para conversarmos.\n\nAtenciosamente,\nRenato de França Lima\n(61) 9935-3163 | rfranca.lima@outlook.com"
 }
 `;
 
@@ -178,6 +179,8 @@ Retorne OBRIGATORIAMENTE um JSON estritamente compatível com o seguinte formato
     }));
 
     const isN3 = /n3|n-3|pleno|avançad|senior|especialista/i.test(params.jobTitle || "") || text.includes("n3") || text.includes("pleno");
+    const roleName = params.jobTitle || "Analista de Suporte";
+    const compName = params.companyName || "sua empresa";
 
     return {
       jobTitle: params.jobTitle || "Analista de Suporte N2/N3",
@@ -231,6 +234,7 @@ Retorne OBRIGATORIAMENTE um JSON estritamente compatível com o seguinte formato
           "Enfatize a certificação AZ-900 e a Pós-Graduação em Inteligência Artificial como diferencial de adaptabilidade técnica.",
         ],
       },
+      suggestedCoverLetter: `Prezado(a) Recrutador(a),\n\nIdentifiquei grande aderência entre os desafios da oportunidade de ${roleName} na ${compName} e minha trajetória profissional. Atuo na sustentação e suporte técnico corporativo avançado, com experiência prática na administração do ecossistema Microsoft 365, Active Directory, automação de fluxos e resolução de incidentes críticos com cumprimento rigoroso de SLAs e governança ITIL 4.\n\nPossuo certificações Microsoft Azure Fundamentals (AZ-900) e ITIL 4 Foundation, graduação em ADS e pós-graduação em Inteligência Artificial em andamento. Compartilho em anexo meu currículo profissional detalhado e fico à disposição para conversarmos!\n\nAtenciosamente,\nRenato de França Lima\n(61) 9935-3163 | rfranca.lima@outlook.com`,
     };
   },
 };

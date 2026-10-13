@@ -168,9 +168,7 @@ export const ApplicationsKanban: React.FC<ApplicationsKanbanProps> = ({
                         data={app.tailored_resume || masterProfile}
                       />
                     }
-                    fileName={`cv-renato-de-franca-lima-${(app.jobs?.title || "vaga")
-                      .toLowerCase()
-                      .replace(/[^a-z0-9]/g, "-")}.pdf`}
+                    fileName="cv-renato-de-franca-lima.pdf"
                     style={{ textDecoration: "none", flex: 1 }}
                   >
                     {({ loading }) => (
