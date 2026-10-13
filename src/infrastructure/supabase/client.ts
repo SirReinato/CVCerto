@@ -1,12 +1,23 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../../shared/types/database.types";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+const rawUrl = import.meta.env.VITE_SUPABASE_URL || "";
+const rawAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
-if (!supabaseUrl || !supabaseAnonKey) {
+const isValidUrl = (url: string) => {
+  try {
+    return Boolean(new URL(url));
+  } catch {
+    return false;
+  }
+};
+
+const supabaseUrl = isValidUrl(rawUrl) ? rawUrl : "https://placeholder.supabase.co";
+const supabaseAnonKey = rawAnonKey || "placeholder-anon-key";
+
+if (!rawUrl || !rawAnonKey) {
   console.warn(
-    "[CV Certo] Atenção: VITE_SUPABASE_URL ou VITE_SUPABASE_ANON_KEY não estão configuradas no .env. Algumas funcionalidades podem não funcionar."
+    "[CV Certo] Atenção: VITE_SUPABASE_URL ou VITE_SUPABASE_ANON_KEY não estão configuradas ou são inválidas no .env. Inicializando com fallback para evitar quebra do React."
   );
 }
 

@@ -19,23 +19,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
+    let isMounted = true;
+
+    // Timeout defensivo de 4 segundos para evitar que falhas de rede travem a tela em loading
+    const safetyTimeout = setTimeout(() => {
+      if (isMounted) setLoading(false);
+    }, 4000);
+
     // 1. Obter sessão atual na inicialização
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        if (!isMounted) return;
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("[AuthContext] Erro ao obter sessão:", err);
+        if (isMounted) setLoading(false);
+      })
+      .finally(() => {
+        clearTimeout(safetyTimeout);
+      });
 
     // 2. Ouvinte reativo para mudanças de estado (login, logout, refresh de token)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
     return () => {
+      isMounted = false;
+      clearTimeout(safetyTimeout);
       subscription.unsubscribe();
     };
   }, []);
