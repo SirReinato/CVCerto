@@ -12,8 +12,10 @@ import type { ResumeData } from "../../domain/entities/Resume";
 // Cores e medidas extraídas com fidelidade geométrica extrema
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 48,
-    paddingBottom: 40,
+    // 72pt de margem superior para NUNCA colidir com o topo geométrico fixo de 56pt
+    paddingTop: 72,
+    // 38pt de margem inferior para NUNCA encostar no rodapé geométrico fixo de 20pt
+    paddingBottom: 38,
     paddingHorizontal: 40,
     fontFamily: "Helvetica",
     fontSize: 9.5,
@@ -22,7 +24,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
 
-  // 1. TOPO GEOMÉTRICO (Faixa cinza contínua + 4 retângulos pretos)
+  // 1. TOPO GEOMÉTRICO FIXO (Faixa cinza contínua + 4 retângulos pretos)
   topDecoration: {
     position: "absolute",
     top: 0,
@@ -71,7 +73,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#0A0A0A",
   },
 
-  // 2. RODAPÉ GEOMÉTRICO (Faixa preta contínua + 3 retângulos cinzas no canto direito)
+  // 2. RODAPÉ GEOMÉTRICO FIXO (Faixa preta contínua + 3 retângulos cinzas no canto direito)
   bottomDecoration: {
     position: "absolute",
     bottom: 0,
@@ -115,8 +117,8 @@ const styles = StyleSheet.create({
   // 3. CABEÇALHO DO CANDIDATO
   header: {
     alignItems: "center",
-    marginBottom: 12,
-    marginTop: 10,
+    marginBottom: 10,
+    marginTop: 0,
   },
   fullName: {
     fontSize: 17,
@@ -252,7 +254,7 @@ interface ResumePDFTemplateProps {
 
 export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) => {
   return (
-    <Document title={`Curriculo_${data.personalInfo.fullName.replace(/\s+/g, "_")}`}>
+    <Document title="cv-renato-de-franca-lima">
       <Page size="A4" style={styles.page}>
         {/* 1. TOPO GEOMÉTRICO FIXO (Repete em todas as páginas) */}
         <View style={styles.topDecoration} fixed>
@@ -291,17 +293,33 @@ export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) =>
 
         <View style={styles.horizontalDivider} />
 
-        {/* 4. RESUMO PROFISSIONAL */}
-        <View minPresenceAhead={30}>
+        {/* 4. RESUMO PROFISSIONAL (Indivisível) */}
+        <View wrap={false}>
           <Text style={styles.sectionTitle}>RESUMO PROFISSIONAL</Text>
           <Text style={styles.summaryText}>{data.summary}</Text>
         </View>
 
         {/* 5. EXPERIÊNCIAS PROFISSIONAIS */}
         {data.experiences.length > 0 && (
-          <View minPresenceAhead={30}>
-            <Text style={styles.sectionTitle}>EXPERIÊNCIAS PROFISSIONAIS</Text>
-            {data.experiences.map((exp) => (
+          <View>
+            {/* TÍTULO + PRIMEIRA EXPERIÊNCIA AGRUPADOS COM wrap={false}: IMPOSSÍVEL O TÍTULO FICAR ÓRFÃO! */}
+            <View wrap={false}>
+              <Text style={styles.sectionTitle}>EXPERIÊNCIAS PROFISSIONAIS</Text>
+              <View style={styles.jobBlock}>
+                <Text style={styles.jobHeader}>
+                  {data.experiences[0].role.toUpperCase()} | {data.experiences[0].company} - {data.experiences[0].period}
+                </Text>
+                {data.experiences[0].activities.map((act, index) => (
+                  <View key={index} style={styles.bulletRow}>
+                    <Text style={styles.bulletPoint}>•</Text>
+                    <Text style={styles.bulletContent}>{act}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {/* Demais experiências: cada uma inteira com wrap={false} (nunca corta ao meio) */}
+            {data.experiences.slice(1).map((exp) => (
               <View key={exp.id} style={styles.jobBlock} wrap={false}>
                 <Text style={styles.jobHeader}>
                   {exp.role.toUpperCase()} | {exp.company} - {exp.period}
@@ -317,12 +335,12 @@ export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) =>
           </View>
         )}
 
-        {/* 6. FORMAÇÃO ACADÊMICA */}
+        {/* 6. FORMAÇÃO ACADÊMICA (Seção inteira indivisível com wrap={false}: nunca separa título nem curso da instituição) */}
         {data.education.length > 0 && (
-          <View minPresenceAhead={30}>
+          <View wrap={false}>
             <Text style={styles.sectionTitle}>FORMAÇÃO ACADÊMICA</Text>
             {data.education.map((edu) => (
-              <View key={edu.id} style={styles.educationBlock} wrap={false}>
+              <View key={edu.id} style={styles.educationBlock}>
                 <Text style={styles.educationDegree}>
                   • {edu.degree} – {edu.status}
                 </Text>
@@ -334,19 +352,23 @@ export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) =>
 
         {/* 7. CERTIFICAÇÕES */}
         {data.certifications.length > 0 && (
-          <View minPresenceAhead={30}>
-            <Text style={styles.sectionTitle}>CERTIFICAÇÕES</Text>
-            {data.certifications
-              .filter((c) => c.category === "principal")
-              .map((cert) => (
-                <View key={cert.id} style={styles.bulletRow} wrap={false}>
-                  <Text style={styles.bulletPoint}>•</Text>
-                  <Text style={styles.bulletContent}>
-                    {cert.name} - {cert.statusOrYear}
-                  </Text>
-                </View>
-              ))}
+          <View>
+            {/* Título + Certificações Principais agrupados com wrap={false} */}
+            <View wrap={false}>
+              <Text style={styles.sectionTitle}>CERTIFICAÇÕES</Text>
+              {data.certifications
+                .filter((c) => c.category === "principal")
+                .map((cert) => (
+                  <View key={cert.id} style={styles.bulletRow}>
+                    <Text style={styles.bulletPoint}>•</Text>
+                    <Text style={styles.bulletContent}>
+                      {cert.name} - {cert.statusOrYear}
+                    </Text>
+                  </View>
+                ))}
+            </View>
 
+            {/* Certificações Complementares agrupadas com wrap={false} */}
             {data.certifications.some((c) => c.category === "complementar") && (
               <View wrap={false} style={{ marginTop: 4 }}>
                 <Text style={styles.subCategoryTitle}>
@@ -369,9 +391,23 @@ export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) =>
 
         {/* 8. CONHECIMENTOS TÉCNICOS E OPERACIONAIS */}
         {data.skills.length > 0 && (
-          <View minPresenceAhead={30}>
-            <Text style={styles.sectionTitle}>CONHECIMENTOS TÉCNICOS E OPERACIONAIS</Text>
-            {data.skills.map((cat) => (
+          <View>
+            {/* TÍTULO + PRIMEIRA CATEGORIA AGRUPADOS COM wrap={false}: IMPOSSÍVEL O TÍTULO FICAR ÓRFÃO! */}
+            <View wrap={false}>
+              <Text style={styles.sectionTitle}>CONHECIMENTOS TÉCNICOS E OPERACIONAIS</Text>
+              <View style={{ marginBottom: 4 }}>
+                <Text style={styles.subCategoryTitle}>{data.skills[0].categoryName}</Text>
+                {data.skills[0].skills.map((skill, sIdx) => (
+                  <View key={sIdx} style={styles.bulletRow}>
+                    <Text style={styles.bulletPoint}>•</Text>
+                    <Text style={styles.bulletContent}>{skill}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {/* Demais categorias de habilidades: cada uma indivisível com wrap={false} */}
+            {data.skills.slice(1).map((cat) => (
               <View key={cat.id} style={{ marginBottom: 4 }} wrap={false}>
                 <Text style={styles.subCategoryTitle}>{cat.categoryName}</Text>
                 {cat.skills.map((skill, sIdx) => (
@@ -387,10 +423,40 @@ export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) =>
 
         {/* 9. PROJETOS E PORTFÓLIO */}
         {data.projects && data.projects.length > 0 && (
-          <View minPresenceAhead={30}>
-            <Text style={styles.sectionTitle}>PROJETOS E PORTFÓLIO</Text>
-            {data.projects.map((proj) => {
-              // Garante que a linha de descrição comece com '-'
+          <View>
+            {/* TÍTULO + PRIMEIRO PROJETO AGRUPADOS COM wrap={false}: IMPOSSÍVEL O TÍTULO FICAR ÓRFÃO! */}
+            <View wrap={false}>
+              <Text style={styles.sectionTitle}>PROJETOS E PORTFÓLIO</Text>
+              {(() => {
+                const proj = data.projects[0];
+                const desc = proj.description.trim().startsWith("-")
+                  ? proj.description.trim().substring(1).trim()
+                  : proj.description.trim();
+
+                return (
+                  <View style={styles.projectBlock}>
+                    <Text style={styles.projectHeader}>
+                      • {proj.name} - {proj.stack}{" "}
+                      {proj.link && (
+                        <Link
+                          src={proj.link.startsWith("http") ? proj.link : `https://${proj.link}`}
+                          style={{ fontSize: 8, color: "#1e1e1e", textDecoration: "underline" }}
+                        >
+                          [Ver Projeto]
+                        </Link>
+                      )}
+                    </Text>
+                    <View style={styles.projectDescriptionRow}>
+                      <Text style={styles.dashPoint}>-</Text>
+                      <Text style={styles.projectDescriptionText}>{desc}</Text>
+                    </View>
+                  </View>
+                );
+              })()}
+            </View>
+
+            {/* Demais projetos: cada um indivisível com wrap={false} */}
+            {data.projects.slice(1).map((proj) => {
               const desc = proj.description.trim().startsWith("-")
                 ? proj.description.trim().substring(1).trim()
                 : proj.description.trim();
@@ -418,9 +484,9 @@ export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) =>
           </View>
         )}
 
-        {/* 10. IDIOMAS */}
+        {/* 10. IDIOMAS (Indivisível com wrap={false}) */}
         {data.languages && data.languages.length > 0 && (
-          <View minPresenceAhead={20} wrap={false}>
+          <View wrap={false}>
             <Text style={styles.sectionTitle}>IDIOMAS</Text>
             {data.languages.map((lang, lIdx) => (
               <Text key={lIdx} style={{ fontSize: 9, color: "#222222", paddingLeft: 6 }}>

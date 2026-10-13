@@ -281,7 +281,7 @@ export const Home: React.FC = () => {
 
           <PDFDownloadLink
             document={<ResumePDFTemplate data={resumeData} />}
-            fileName="Curriculo_Renato_Franca_Lima.pdf"
+            fileName="cv-renato-de-franca-lima.pdf"
             style={{ textDecoration: "none" }}
           >
             {({ loading }) => (
