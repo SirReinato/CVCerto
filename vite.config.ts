@@ -11,7 +11,7 @@ export default defineConfig({
         // Desabilitado em dev para permitir recarregamento limpo de variáveis e HMR
         enabled: false,
       },
-      includeAssets: ["icons/apple-touch-icon.png", "offline.html"],
+      includeAssets: ["favicon.png", "icons/apple-touch-icon.png", "offline.html"],
       manifest: {
         name: "CV Certo - Gerador e Gestor de Candidaturas",
         short_name: "CV Certo",
