@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { Plus, Trash2, Save, User, Briefcase, GraduationCap, Award, FolderGit2 } from "lucide-react";
 import type { ResumeData, Experience, Education, Certification, Project } from "../../domain/entities/Resume";
@@ -8,6 +8,25 @@ interface ProfileEditorProps {
   onSave: (updatedData: ResumeData) => Promise<void>;
   isSaving: boolean;
 }
+
+const deduplicateList = <T extends { id?: string }>(items: T[] = []): T[] => {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = item.id || JSON.stringify(item);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const normalizeProfile = (raw: ResumeData): ResumeData => ({
+  ...raw,
+  experiences: deduplicateList(raw.experiences),
+  education: deduplicateList(raw.education),
+  certifications: deduplicateList(raw.certifications),
+  skills: deduplicateList(raw.skills),
+  projects: deduplicateList(raw.projects || []),
+});
 
 const EditorContainer = styled.div`
   background-color: #ffffff;
@@ -152,7 +171,11 @@ const SaveFloatingBar = styled.div`
 `;
 
 export const ProfileEditor: React.FC<ProfileEditorProps> = ({ data, onSave, isSaving }) => {
-  const [profile, setProfile] = useState<ResumeData>(data);
+  const [profile, setProfile] = useState<ResumeData>(() => normalizeProfile(data));
+
+  useEffect(() => {
+    setProfile(normalizeProfile(data));
+  }, [data]);
 
   const handlePersonalChange = (field: keyof ResumeData["personalInfo"], value: string) => {
     setProfile((prev) => ({
@@ -328,8 +351,8 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ data, onSave, isSa
           <Briefcase size={18} />
           <h2>Experiências Profissionais ({profile.experiences.length})</h2>
         </SectionHeader>
-        {profile.experiences.map((exp) => (
-          <CardItem key={exp.id}>
+        {profile.experiences.map((exp, idx) => (
+          <CardItem key={exp.id ? `${exp.id}-${idx}` : `exp-${idx}`}>
             <DeleteButton onClick={() => handleDeleteExperience(exp.id)} title="Remover experiência">
               <Trash2 size={16} />
             </DeleteButton>
@@ -383,8 +406,8 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ data, onSave, isSa
           <GraduationCap size={18} />
           <h2>Formação Acadêmica ({profile.education.length})</h2>
         </SectionHeader>
-        {profile.education.map((edu) => (
-          <CardItem key={edu.id}>
+        {profile.education.map((edu, idx) => (
+          <CardItem key={edu.id ? `${edu.id}-${idx}` : `edu-${idx}`}>
             <DeleteButton onClick={() => handleDeleteEducation(edu.id)} title="Remover formação">
               <Trash2 size={16} />
             </DeleteButton>
@@ -439,8 +462,8 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ data, onSave, isSa
           <Award size={18} />
           <h2>Certificações ({profile.certifications.length})</h2>
         </SectionHeader>
-        {profile.certifications.map((cert) => (
-          <CardItem key={cert.id}>
+        {profile.certifications.map((cert, idx) => (
+          <CardItem key={cert.id ? `${cert.id}-${idx}` : `cert-${idx}`}>
             <DeleteButton onClick={() => handleDeleteCertification(cert.id)} title="Remover certificação">
               <Trash2 size={16} />
             </DeleteButton>
@@ -507,8 +530,8 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ data, onSave, isSa
           <FolderGit2 size={18} />
           <h2>Projetos e Portfólio ({(profile.projects || []).length})</h2>
         </SectionHeader>
-        {(profile.projects || []).map((proj) => (
-          <CardItem key={proj.id}>
+        {(profile.projects || []).map((proj, idx) => (
+          <CardItem key={proj.id ? `${proj.id}-${idx}` : `proj-${idx}`}>
             <DeleteButton onClick={() => handleDeleteProject(proj.id)} title="Remover projeto">
               <Trash2 size={16} />
             </DeleteButton>

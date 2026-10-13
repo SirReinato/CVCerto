@@ -85,6 +85,23 @@ export const MasterProfileRepository = {
       }
     });
 
+    // Deduplicação defensiva por ID para evitar duplicatas em renderizações concorrentes
+    const deduplicateById = <T extends { id?: string }>(items: T[]): T[] => {
+      const seen = new Set<string>();
+      return items.filter((item) => {
+        const key = item.id || JSON.stringify(item);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    };
+
+    profile.experiences = deduplicateById(profile.experiences);
+    profile.education = deduplicateById(profile.education);
+    profile.certifications = deduplicateById(profile.certifications);
+    profile.skills = deduplicateById(profile.skills);
+    profile.projects = deduplicateById(profile.projects || []);
+
     return profile;
   },
 
