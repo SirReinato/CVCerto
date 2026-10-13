@@ -8,8 +8,8 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       devOptions: {
-        // Permite testar manifest + service worker no `npm run dev`
-        enabled: true,
+        // Desabilitado em dev para permitir recarregamento limpo de variáveis e HMR
+        enabled: false,
       },
       includeAssets: ["icons/apple-touch-icon.png", "offline.html"],
       manifest: {
