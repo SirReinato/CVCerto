@@ -31,9 +31,11 @@ export interface ApplicationItem {
   created_at: string;
   tailored_resume?: ResumeData | null;
   cover_letter?: string | null;
+  analysis?: JobAnalysis | null;
   jobs?: {
     title: string;
     raw_description: string;
+    analysis?: any;
     companies?: {
       name: string;
     } | null;
@@ -115,7 +117,7 @@ export const JobApplicationsRepository = {
   async listApplications(userId: string): Promise<ApplicationItem[]> {
     const { data, error } = await supabase
       .from("job_applications")
-      .select("*, jobs(title, raw_description, companies(name))")
+      .select("*, jobs(title, raw_description, analysis, companies(name))")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 

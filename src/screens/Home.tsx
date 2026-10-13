@@ -247,9 +247,11 @@ export const Home: React.FC = () => {
       created_at: new Date().toISOString(),
       tailored_resume: tailoredResult.tailoredResume,
       cover_letter: jobDetails?.analysis?.suggestedCoverLetter || null,
+      analysis: jobDetails?.analysis || null,
       jobs: {
         title: jobDetails?.jobTitle || "Analista de Suporte N2/N3",
         raw_description: jobDetails?.jobDescription || "",
+        analysis: jobDetails?.analysis || null,
         companies: {
           name: jobDetails?.companyName || "Empresa Cadastrada",
         },
