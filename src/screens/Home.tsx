@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from "react";
-import styled from "styled-components";
-import { PDFDownloadLink } from "@react-pdf/renderer";
-import { Download, FileText, CheckCircle2, LogOut, User as UserIcon, Edit3, Eye, Sparkles } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { MasterProfileRepository } from "../infrastructure/supabase/MasterProfileRepository";
 import { MASTER_PROFILE } from "../shared/constants/masterProfile";
 import type { ResumeData } from "../domain/entities/Resume";
-import { ResumeWebPreview } from "../presentation/components/ResumeWebPreview";
-import { ResumePDFTemplate } from "../presentation/templates/ResumePDFTemplate";
+import { ResumeCanvas } from "../presentation/components/ResumeCanvas";
+import { WorkspaceLayout } from "../presentation/components/WorkspaceLayout";
 import { ProfileEditor } from "../presentation/components/ProfileEditor";
 import { JobAnalyzer } from "../presentation/components/JobAnalyzer";
 import { ApplicationsKanban } from "../presentation/components/ApplicationsKanban";
@@ -17,150 +14,6 @@ import { ResumeVersionsRepository } from "../infrastructure/supabase/ResumeVersi
 import { JobApplicationsRepository, type ApplicationItem } from "../infrastructure/supabase/JobApplicationsRepository";
 import type { TailoredResumeResult } from "../domain/rules/ResumeTailoringEngine";
 import type { ApplicationStatus } from "../shared/types/database.types";
-import { LayoutDashboard, Kanban, Mail } from "lucide-react";
-
-const Container = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-`;
-
-const TopBar = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: #ffffff;
-  padding: 16px 24px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  flex-wrap: wrap;
-  gap: 16px;
-
-  h1 {
-    font-size: 1.4rem;
-    color: #1e1e1e;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-`;
-
-const ActionsGroup = styled.div`
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
-`;
-
-const Button = styled.button<{ $primary?: boolean }>`
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-  border: 1px solid ${(props) => (props.$primary ? "#1E1E1E" : "#d0d0d0")};
-  background-color: ${(props) => (props.$primary ? "#1E1E1E" : "#ffffff")};
-  color: ${(props) => (props.$primary ? "#ffffff" : "#1E1E1E")};
-  transition: all 0.2s ease;
-  text-decoration: none;
-
-  &:hover {
-    filter: brightness(1.1);
-    transform: translateY(-1px);
-  }
-`;
-
-const Badge = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background-color: #e8f5e9;
-  color: #2e7d32;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-`;
-
-const TabsBar = styled.div`
-  display: flex;
-  gap: 8px;
-  border-bottom: 2px solid #e0e0e0;
-  padding-bottom: 4px;
-
-  button {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    background: none;
-    border: none;
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: #666666;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: all 0.2s;
-
-    &.active {
-      color: #1e1e1e;
-      background-color: #ffffff;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    }
-  }
-`;
-
-const MainContent = styled.div`
-  display: flex;
-  gap: 24px;
-
-  @media (max-width: 900px) {
-    flex-direction: column;
-  }
-`;
-
-const Sidebar = styled.div`
-  flex: 1;
-  background-color: #ffffff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  height: fit-content;
-
-  h2 {
-    font-size: 1.1rem;
-    color: #1e1e1e;
-    margin: 0 0 12px 0;
-  }
-
-  p {
-    font-size: 0.85rem;
-    color: #555555;
-    line-height: 1.5;
-  }
-
-  ul {
-    padding-left: 20px;
-    margin: 12px 0;
-    font-size: 0.85rem;
-    color: #444444;
-
-    li {
-      margin-bottom: 6px;
-    }
-  }
-`;
-
-const PreviewArea = styled.div`
-  flex: 2.2;
-`;
 
 export const Home: React.FC = () => {
   const { user, signOut } = useAuth();
@@ -297,103 +150,47 @@ export const Home: React.FC = () => {
     setCurrentTab("kanban");
   };
 
+  const [visibleSections, setVisibleSections] = useState({
+    summary: true,
+    experiences: true,
+    education: true,
+    certifications: true,
+    skills: true,
+    projects: true,
+    languages: true,
+  });
+
+  const handleToggleSection = (sectionKey: string) => {
+    setVisibleSections((prev) => ({
+      ...prev,
+      [sectionKey as keyof typeof prev]: !prev[sectionKey as keyof typeof prev],
+    }));
+  };
+
+  const handleRestoreBase = () => {
+    setPreviewResume(masterResume);
+    setActiveResumeTitle("Currículo Base Oficial (N2/N3)");
+  };
+
   const handleOpenEmailWithApp = (app: ApplicationItem) => {
     setSelectedAppForEmail(app);
     setCurrentTab("email");
   };
 
   return (
-    <Container>
-      <TopBar>
-        <div>
-          <h1>
-            <FileText size={24} /> CV Certo - Perfil Mestre & IA
-          </h1>
-          <p style={{ margin: "4px 0 0 0", fontSize: "0.85rem", color: "#666" }}>
-            Base de fatos reais protegida e motor de inteligência artificial ATS.
-          </p>
-        </div>
-
-        <ActionsGroup>
-          {user?.email && (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                fontSize: "0.82rem",
-                color: "#555",
-                fontWeight: 500,
-              }}
-            >
-              <UserIcon size={16} />
-              <span>{user.email}</span>
-            </div>
-          )}
-
-          <Badge>
-            <CheckCircle2 size={16} /> 100% Compatível com ATS
-          </Badge>
-
-          <PDFDownloadLink
-            document={<ResumePDFTemplate data={previewResume} />}
-            fileName="cv-renato-de-franca-lima.pdf"
-            style={{ textDecoration: "none" }}
-          >
-            {({ loading }) => (
-              <Button $primary disabled={loading}>
-                <Download size={16} />
-                {loading ? "Preparando PDF..." : previewResume === masterResume ? "Baixar PDF Oficial" : "Baixar CV Visualizado"}
-              </Button>
-            )}
-          </PDFDownloadLink>
-
-          <Button onClick={signOut} title="Encerrar Sessão">
-            <LogOut size={16} />
-            Sair
-          </Button>
-        </ActionsGroup>
-      </TopBar>
-
-      <TabsBar>
-        <button
-          className={currentTab === "preview" ? "active" : ""}
-          onClick={() => setCurrentTab("preview")}
-        >
-          <Eye size={16} /> Visualizar Currículo
-        </button>
-        <button
-          className={currentTab === "analyze" ? "active" : ""}
-          onClick={() => setCurrentTab("analyze")}
-        >
-          <Sparkles size={16} /> Analisar Vaga com IA
-        </button>
-        <button
-          className={currentTab === "kanban" ? "active" : ""}
-          onClick={() => setCurrentTab("kanban")}
-        >
-          <Kanban size={16} /> CRM Candidaturas ({applications.length})
-        </button>
-        <button
-          className={currentTab === "metrics" ? "active" : ""}
-          onClick={() => setCurrentTab("metrics")}
-        >
-          <LayoutDashboard size={16} /> Dashboard
-        </button>
-        <button
-          className={currentTab === "email" ? "active" : ""}
-          onClick={() => setCurrentTab("email")}
-        >
-          <Mail size={16} /> Disparo Outlook
-        </button>
-        <button
-          className={currentTab === "edit" ? "active" : ""}
-          onClick={() => setCurrentTab("edit")}
-        >
-          <Edit3 size={16} /> Editar Perfil Mestre (Fatos Reais)
-        </button>
-      </TabsBar>
-
+    <WorkspaceLayout
+      currentTab={currentTab}
+      onTabChange={setCurrentTab}
+      userEmail={user?.email}
+      onSignOut={signOut}
+      masterResume={masterResume}
+      activeResume={previewResume}
+      activeResumeTitle={activeResumeTitle}
+      onRestoreBase={handleRestoreBase}
+      applicationsCount={applications.length}
+      visibleSections={visibleSections}
+      onToggleSection={handleToggleSection}
+    >
       {currentTab === "kanban" ? (
         <ApplicationsKanban
           applications={applications}
@@ -424,60 +221,12 @@ export const Home: React.FC = () => {
           isSaving={isSaving}
         />
       ) : (
-        <MainContent>
-          <Sidebar>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <h2 style={{ margin: 0 }}>Base da Verdade (Fatos Reais)</h2>
-              {previewResume !== masterResume && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPreviewResume(masterResume);
-                    setActiveResumeTitle("Currículo Base Oficial (N2/N3)");
-                  }}
-                  style={{
-                    fontSize: "0.75rem",
-                    padding: "4px 8px",
-                    borderRadius: 4,
-                    border: "1px solid #d0d0d0",
-                    background: "#f5f5f5",
-                    cursor: "pointer",
-                  }}
-                  title="Restaurar visualização do Currículo Base Oficial"
-                >
-                  Ver Base
-                </button>
-              )}
-            </div>
-            <p>
-              Estes dados estão protegidos na base de fatos.
-              Nenhum processo da IA gera experiências ou certificações fora deste conjunto.
-            </p>
-            <div style={{ margin: "10px 0", padding: "8px 12px", background: "#f0f4f8", borderRadius: 6, fontSize: "0.8rem", color: "#005fb8", fontWeight: 600 }}>
-              📄 Exibindo: {activeResumeTitle}
-            </div>
-            <ul>
-              <li>
-                <strong>Experiências:</strong> {masterResume.experiences.length} cadastradas
-              </li>
-              <li>
-                <strong>Formações:</strong> {masterResume.education.length} registradas
-              </li>
-              <li>
-                <strong>Certificações:</strong> {masterResume.certifications.length} validadas
-              </li>
-              <li>
-                <strong>Habilidades:</strong> {masterResume.skills.length} categorias
-              </li>
-            </ul>
-          </Sidebar>
-
-          <PreviewArea>
-            <ResumeWebPreview data={previewResume} />
-          </PreviewArea>
-        </MainContent>
+        <ResumeCanvas
+          data={previewResume}
+          visibleSections={visibleSections}
+        />
       )}
-    </Container>
+    </WorkspaceLayout>
   );
 };
 export default Home;
