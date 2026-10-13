@@ -27,8 +27,10 @@ export const ResumeTailoringEngine = {
       tailoredTargetRole =
         "DESENVOLVEDOR FRONT-END | REACT | TYPESCRIPT | NEXT.JS | APIS REST";
     } else {
-      tailoredTargetRole =
-        "ANALISTA DE SUPORTE | MICROSOFT 365 | ACTIVE DIRECTORY | AZURE | ITIL";
+      const isN3 = /n3|n-3|avançad|pleno|especialista/i.test(analysis.jobTitle);
+      tailoredTargetRole = isN3
+        ? "ANALISTA DE SUPORTE N3 / PLENO | MICROSOFT 365 | ACTIVE DIRECTORY | AZURE | ITIL"
+        : "ANALISTA DE SUPORTE N2/N3 | MICROSOFT 365 | ACTIVE DIRECTORY | AZURE | ITIL";
     }
 
     // 3. Ajuste do Resumo com ênfase nas palavras-chave ATS detectadas na vaga

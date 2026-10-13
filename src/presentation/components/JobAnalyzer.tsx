@@ -9,7 +9,10 @@ import { ResumeTailoringEngine, type TailoredResumeResult } from "../../domain/r
 interface JobAnalyzerProps {
   masterProfile: ResumeData;
   onAnalysisComplete?: (analysis: JobAnalysis) => void;
-  onGenerateResume?: (tailoredResult: TailoredResumeResult) => void;
+  onGenerateResume?: (
+    tailoredResult: TailoredResumeResult,
+    jobDetails?: { jobTitle: string; companyName: string; jobDescription: string; analysis: JobAnalysis }
+  ) => void;
 }
 
 const Card = styled.div`
@@ -306,13 +309,99 @@ export const JobAnalyzer: React.FC<JobAnalyzerProps> = ({
             </p>
           </div>
 
+          {analysisResult.interviewPrep && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, backgroundColor: "#f8fafd", border: "1px solid #d0e2ff", borderRadius: 8, padding: 18 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#0f62fe" }}>
+                <Sparkles size={20} />
+                <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 700 }}>
+                  Preparação para Entrevista & Respostas Estratégicas (IA)
+                </h4>
+              </div>
+
+              {/* Guia de Pretensão Salarial */}
+              <div style={{ backgroundColor: "#ffffff", padding: 14, borderRadius: 6, border: "1px solid #e0e0e0" }}>
+                <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1e1e1e", marginBottom: 6 }}>
+                  💰 Guia de Pretensão Salarial Recomendada:
+                </div>
+                <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 6 }}>
+                  <span style={{ fontSize: "0.85rem", color: "#2e7d32", fontWeight: 600 }}>
+                    CLT Fixo: {analysisResult.interviewPrep.salaryExpectationGuide.suggestedCLT}
+                  </span>
+                  {analysisResult.interviewPrep.salaryExpectationGuide.suggestedPJ && (
+                    <span style={{ fontSize: "0.85rem", color: "#1565c0", fontWeight: 600 }}>
+                      PJ: {analysisResult.interviewPrep.salaryExpectationGuide.suggestedPJ}
+                    </span>
+                  )}
+                </div>
+                <p style={{ margin: 0, fontSize: "0.8rem", color: "#666" }}>
+                  <em>Justificativa:</em> {analysisResult.interviewPrep.salaryExpectationGuide.justification}
+                </p>
+              </div>
+
+              {/* Resposta de Motivação */}
+              <div style={{ backgroundColor: "#ffffff", padding: 14, borderRadius: 6, border: "1px solid #e0e0e0" }}>
+                <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1e1e1e", marginBottom: 4 }}>
+                  🎯 O que responder sobre o que motivou a se candidatar:
+                </div>
+                <p style={{ margin: 0, fontSize: "0.83rem", color: "#333333", lineHeight: 1.45, fontStyle: "italic" }}>
+                  "{analysisResult.interviewPrep.motivationResponse}"
+                </p>
+              </div>
+
+              {/* Perguntas e Respostas Comuns */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1e1e1e" }}>
+                  🗣️ Perguntas Frequentes & Respostas Sugeridas:
+                </div>
+                {analysisResult.interviewPrep.commonQuestions.map((qa, idx) => (
+                  <div key={idx} style={{ backgroundColor: "#ffffff", padding: 12, borderRadius: 6, border: "1px solid #e0e0e0" }}>
+                    <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#0f62fe", marginBottom: 4 }}>
+                      P: {qa.question}
+                    </div>
+                    <div style={{ fontSize: "0.82rem", color: "#333", lineHeight: 1.45, marginBottom: 6 }}>
+                      <strong>Sugestão:</strong> {qa.suggestedAnswer}
+                    </div>
+                    {qa.keyPointsToHighlight && qa.keyPointsToHighlight.length > 0 && (
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {qa.keyPointsToHighlight.map((kp, kidx) => (
+                          <span key={kidx} style={{ backgroundColor: "#edf5ff", color: "#0043ce", fontSize: "0.72rem", padding: "2px 8px", borderRadius: 4 }}>
+                            ✓ {kp}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Dicas Práticas de Preparação */}
+              {analysisResult.interviewPrep.preparationTips && (
+                <div style={{ backgroundColor: "#ffffff", padding: 12, borderRadius: 6, border: "1px solid #e0e0e0" }}>
+                  <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1e1e1e", marginBottom: 6 }}>
+                    📌 Dicas Práticas de Postura e Estudo:
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: 18, fontSize: "0.8rem", color: "#444" }}>
+                    {analysisResult.interviewPrep.preparationTips.map((tip, idx) => (
+                      <li key={idx} style={{ marginBottom: 4 }}>{tip}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
           {onGenerateResume && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
               <SubmitButton
                 type="button"
                 onClick={() => {
                   const tailored = ResumeTailoringEngine.generate(masterProfile, analysisResult);
-                  onGenerateResume(tailored);
+                  onGenerateResume(tailored, {
+                    jobTitle: jobTitle || analysisResult.jobTitle,
+                    companyName: companyName || analysisResult.companyName || "Empresa Confidencial",
+                    jobDescription,
+                    analysis: analysisResult,
+                  });
                 }}
               >
                 <ShieldCheck size={18} />

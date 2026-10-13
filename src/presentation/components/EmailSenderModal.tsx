@@ -2,12 +2,18 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import { Mail, Send, CheckCircle2, Paperclip } from "lucide-react";
 import { OutlookGraphMailService } from "../../infrastructure/mail/OutlookGraphMailService";
+import type { ResumeData } from "../../domain/entities/Resume";
+import type { ApplicationItem } from "../../infrastructure/supabase/JobApplicationsRepository";
+
 
 interface EmailSenderModalProps {
   userId: string;
   applicationId?: string;
   defaultEmail?: string;
   candidateName: string;
+  masterProfile: ResumeData;
+  availableApplications?: ApplicationItem[];
+  selectedApp?: ApplicationItem | null;
   onSent?: () => void;
 }
 
@@ -33,6 +39,7 @@ const FormGroup = styled.div`
   }
 
   input,
+  select,
   textarea {
     padding: 10px 12px;
     border: 1px solid #d0d0d0;
@@ -84,11 +91,11 @@ const AttachmentBadge = styled.div`
   gap: 6px;
   background-color: #f0f4f8;
   color: #0078d4;
-  padding: 6px 12px;
+  padding: 8px 12px;
   border-radius: 6px;
   font-size: 0.82rem;
   font-weight: 600;
-  width: fit-content;
+  width: 100%;
   border: 1px dashed #b3d7ff;
 `;
 
@@ -97,15 +104,52 @@ export const EmailSenderModal: React.FC<EmailSenderModalProps> = ({
   applicationId,
   defaultEmail,
   candidateName,
+  masterProfile,
+  availableApplications = [],
+  selectedApp,
   onSent,
 }) => {
+  const [selectedAttachmentType, setSelectedAttachmentType] = useState<string>(
+    selectedApp?.id ? selectedApp.id : "master"
+  );
   const [toEmail, setToEmail] = useState(defaultEmail || "");
-  const [subject, setSubject] = useState(`Candidatura - ${candidateName} (Currículo Anexo)`);
+  const [subject, setSubject] = useState(
+    selectedApp?.jobs?.title
+      ? `Candidatura: ${selectedApp.jobs.title} - ${candidateName}`
+      : `Candidatura - ${candidateName} (Currículo Anexo)`
+  );
   const [body, setBody] = useState(
     `Prezado(a) Recrutador(a),\n\nCompartilho em anexo meu currículo profissional atualizado com foco e certificações alinhadas à vaga.\n\nFico à disposição para uma conversa!\n\nAtenciosamente,\n${candidateName}\n(61) 9935-3163 | rfranca.lima@outlook.com`
   );
   const [isSending, setIsSending] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  // Calcula o anexo atualmente selecionado
+  const activeAttachment = React.useMemo(() => {
+    if (selectedAttachmentType === "master") {
+      return {
+        label: "Currículo Base Mais Forte (Nível N2/N3 Oficial)",
+        fileName: "cv-renato-de-franca-lima.pdf",
+        data: masterProfile,
+      };
+    }
+    const foundApp = availableApplications.find((a) => a.id === selectedAttachmentType);
+    if (foundApp) {
+      const sanitizedTitle = (foundApp.jobs?.title || "vaga")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "-");
+      return {
+        label: `CV Específico: ${foundApp.jobs?.title || "Vaga"} (${foundApp.jobs?.companies?.name || "Empresa"})`,
+        fileName: `cv-renato-de-franca-lima-${sanitizedTitle}.pdf`,
+        data: foundApp.tailored_resume || masterProfile,
+      };
+    }
+    return {
+      label: "Currículo Base Mais Forte (Nível N2/N3 Oficial)",
+      fileName: "cv-renato-de-franca-lima.pdf",
+      data: masterProfile,
+    };
+  }, [selectedAttachmentType, masterProfile, availableApplications]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,11 +159,11 @@ export const EmailSenderModal: React.FC<EmailSenderModalProps> = ({
     try {
       await OutlookGraphMailService.sendResumeEmail({
         userId,
-        applicationId,
+        applicationId: selectedAttachmentType !== "master" ? selectedAttachmentType : applicationId,
         toEmail,
         subject,
         body,
-        fileName: `Curriculo_${candidateName.replace(/\s+/g, "_")}.pdf`,
+        fileName: activeAttachment.fileName,
       });
 
       setIsSuccess(true);
@@ -139,12 +183,41 @@ export const EmailSenderModal: React.FC<EmailSenderModalProps> = ({
         </h2>
         <p style={{ margin: 0, fontSize: "0.85rem", color: "#666666" }}>
           Envie o currículo PDF gerado diretamente pela sua conta pessoal (<code>rfranca.lima@outlook.com</code>).
-          O envio fica registrado no histórico de candidaturas.
+          Escolha anexar o <strong>Currículo Base Mais Forte</strong> ou o <strong>Currículo Específico Otimizado da Vaga</strong>.
         </p>
       </div>
 
+      <FormGroup>
+        <label>Selecione qual Currículo Anexar ao Disparo:</label>
+        <select
+          value={selectedAttachmentType}
+          onChange={(e) => {
+            setSelectedAttachmentType(e.target.value);
+            const found = availableApplications.find((a) => a.id === e.target.value);
+            if (found?.jobs?.title) {
+              setSubject(`Candidatura: ${found.jobs.title} - ${candidateName}`);
+            } else if (e.target.value === "master") {
+              setSubject(`Candidatura - ${candidateName} (Currículo Oficial N2/N3)`);
+            }
+          }}
+        >
+          <option value="master">
+            ⭐ Currículo Base Mais Forte (Nível N2/N3 Oficial - Padrão Otimizado)
+          </option>
+          {availableApplications.map((app) => (
+            <option key={app.id} value={app.id}>
+              🎯 CV Personalizado: {app.jobs?.title || "Vaga"} - {app.jobs?.companies?.name || "Empresa"} (Match: {app.match_overall || 85}%)
+            </option>
+          ))}
+        </select>
+      </FormGroup>
+
       <AttachmentBadge>
-        <Paperclip size={14} /> Anexo: Curriculo_Renato_Franca_Lima.pdf (Pronto)
+        <Paperclip size={16} />
+        <div>
+          <div><strong>Anexo Selecionado:</strong> {activeAttachment.fileName}</div>
+          <div style={{ fontSize: "0.75rem", color: "#555" }}>{activeAttachment.label}</div>
+        </div>
       </AttachmentBadge>
 
       <form onSubmit={handleSend} style={{ display: "flex", flexDirection: "column", gap: 14 }}>

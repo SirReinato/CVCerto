@@ -1,12 +1,17 @@
 import React from "react";
 import styled from "styled-components";
-import { Building2 } from "lucide-react";
+import { Building2, Download, Send } from "lucide-react";
+import { PDFDownloadLink } from "@react-pdf/renderer";
 import type { ApplicationStatus } from "../../shared/types/database.types";
 import type { ApplicationItem } from "../../infrastructure/supabase/JobApplicationsRepository";
+import type { ResumeData } from "../../domain/entities/Resume";
+import { ResumePDFTemplate } from "../templates/ResumePDFTemplate";
 
 interface ApplicationsKanbanProps {
   applications: ApplicationItem[];
+  masterProfile: ResumeData;
   onStatusChange: (id: string, newStatus: ApplicationStatus) => void;
+  onSendEmail?: (app: ApplicationItem) => void;
 }
 
 const COLUMNS: Array<{ status: ApplicationStatus; label: string; color: string }> = [
@@ -119,7 +124,9 @@ const StatusSelect = styled.select`
 
 export const ApplicationsKanban: React.FC<ApplicationsKanbanProps> = ({
   applications,
+  masterProfile,
   onStatusChange,
+  onSendEmail,
 }) => {
   return (
     <Board>
@@ -152,6 +159,71 @@ export const ApplicationsKanban: React.FC<ApplicationsKanbanProps> = ({
                       </option>
                     ))}
                   </StatusSelect>
+                </div>
+
+                <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                  <PDFDownloadLink
+                    document={
+                      <ResumePDFTemplate
+                        data={app.tailored_resume || masterProfile}
+                      />
+                    }
+                    fileName={`cv-renato-de-franca-lima-${(app.jobs?.title || "vaga")
+                      .toLowerCase()
+                      .replace(/[^a-z0-9]/g, "-")}.pdf`}
+                    style={{ textDecoration: "none", flex: 1 }}
+                  >
+                    {({ loading }) => (
+                      <button
+                        type="button"
+                        disabled={loading}
+                        style={{
+                          width: "100%",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 4,
+                          padding: "6px 8px",
+                          fontSize: "0.72rem",
+                          fontWeight: 600,
+                          backgroundColor: "#1e1e1e",
+                          color: "#ffffff",
+                          border: "none",
+                          borderRadius: 4,
+                          cursor: "pointer",
+                        }}
+                        title="Baixar currículo sob medida para esta vaga"
+                      >
+                        <Download size={12} />
+                        {loading ? "Gerando..." : "Baixar CV da Vaga"}
+                      </button>
+                    )}
+                  </PDFDownloadLink>
+
+                  {onSendEmail && (
+                    <button
+                      type="button"
+                      onClick={() => onSendEmail(app)}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 4,
+                        padding: "6px 8px",
+                        fontSize: "0.72rem",
+                        fontWeight: 600,
+                        backgroundColor: "#0078d4",
+                        color: "#ffffff",
+                        border: "none",
+                        borderRadius: 4,
+                        cursor: "pointer",
+                      }}
+                      title="Disparar e-mail via Outlook"
+                    >
+                      <Send size={12} />
+                      Outlook
+                    </button>
+                  )}
                 </div>
               </Card>
             ))}

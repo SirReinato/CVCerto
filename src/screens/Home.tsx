@@ -164,16 +164,20 @@ const PreviewArea = styled.div`
 
 export const Home: React.FC = () => {
   const { user, signOut } = useAuth();
-  const [resumeData, setResumeData] = useState<ResumeData>(MASTER_PROFILE);
+  const [masterResume, setMasterResume] = useState<ResumeData>(MASTER_PROFILE);
+  const [previewResume, setPreviewResume] = useState<ResumeData>(MASTER_PROFILE);
+  const [activeResumeTitle, setActiveResumeTitle] = useState<string>("Currículo Base Oficial (N2/N3)");
   const [currentTab, setCurrentTab] = useState<"preview" | "edit" | "analyze" | "kanban" | "metrics" | "email">("preview");
   const [applications, setApplications] = useState<ApplicationItem[]>([]);
+  const [selectedAppForEmail, setSelectedAppForEmail] = useState<ApplicationItem | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   // Carrega ou inicializa o perfil mestre sincronizado no Supabase
   useEffect(() => {
     if (user?.id) {
       MasterProfileRepository.getOrCreateProfile(user.id).then((profile) => {
-        setResumeData(profile);
+        setMasterResume(profile);
+        setPreviewResume(profile);
       });
       JobApplicationsRepository.listApplications(user.id).then((apps) => {
         setApplications(apps);
@@ -197,15 +201,16 @@ export const Home: React.FC = () => {
     setIsSaving(true);
     try {
       await MasterProfileRepository.saveProfile(user.id, updated);
-      setResumeData(updated);
+      setMasterResume(updated);
+      setPreviewResume(updated);
       alert("Perfil Mestre salvo e sincronizado com sucesso no Supabase!");
       setCurrentTab("preview");
     } catch (err: any) {
       console.warn("[Home] Falha ao persistir no Supabase:", err);
-      // Mantém o estado atualizado na interface para o usuário não perder alterações
-      setResumeData(updated);
+      setMasterResume(updated);
+      setPreviewResume(updated);
       alert(
-        "Aviso: Suas alterações foram atualizadas na visualização, mas as tabelas ainda não foram criadas no seu Supabase (Erro 404).\n\nPara sincronização persistente, basta executar a migration SQL no painel do Supabase."
+        "Aviso: Suas alterações foram atualizadas na visualização local."
       );
       setCurrentTab("preview");
     } finally {
@@ -213,37 +218,85 @@ export const Home: React.FC = () => {
     }
   };
 
-  const handleGenerateTailored = async (tailoredResult: TailoredResumeResult) => {
+  const handleGenerateTailored = async (
+    tailoredResult: TailoredResumeResult,
+    jobDetails?: { jobTitle: string; companyName: string; jobDescription: string; analysis: any }
+  ) => {
     if (!tailoredResult.validationReport.isValid) {
       alert("Alerta de Invenção: O validador determinístico bloqueou a geração por inconsistência com o Perfil Mestre.");
       return;
     }
 
-    setResumeData(tailoredResult.tailoredResume);
-    setCurrentTab("preview");
+    // NÃO altera o masterResume! Apenas coloca na pré-visualização ativa e salva como versão independente
+    setPreviewResume(tailoredResult.tailoredResume);
+    setActiveResumeTitle(
+      `Versão Customizada: ${jobDetails?.jobTitle || "Vaga"} (${jobDetails?.companyName || "Empresa"})`
+    );
+
+    const newAppItem: ApplicationItem = {
+      id: `app_${Date.now()}`,
+      user_id: user?.id || "local",
+      job_id: `job_${Date.now()}`,
+      status: "curriculo_gerado",
+      match_overall: jobDetails?.analysis?.matchScores?.overall || 90,
+      match_technical: jobDetails?.analysis?.matchScores?.technical || 92,
+      match_behavioral: jobDetails?.analysis?.matchScores?.behavioral || 88,
+      work_model: "hibrido",
+      salary_offered: null,
+      notes: tailoredResult.atsOptimizationSummary,
+      created_at: new Date().toISOString(),
+      tailored_resume: tailoredResult.tailoredResume,
+      jobs: {
+        title: jobDetails?.jobTitle || "Analista de Suporte N2/N3",
+        raw_description: jobDetails?.jobDescription || "",
+        companies: {
+          name: jobDetails?.companyName || "Empresa Cadastrada",
+        },
+      },
+    };
+
+    setApplications((prev) => [newAppItem, ...prev]);
 
     if (user?.id) {
       try {
         await ResumeVersionsRepository.saveVersion({
           userId: user.id,
           content: tailoredResult.tailoredResume,
-          atsScore: 92,
+          atsScore: jobDetails?.analysis?.matchScores?.overall || 92,
           validationReport: tailoredResult.validationReport,
         });
 
-        // Cria também a candidatura no CRM se houver vaga gerada
-        const newApp = await JobApplicationsRepository.createApplication({
+        const created: any = await JobApplicationsRepository.createApplication({
           userId: user.id,
-          jobTitle: tailoredResult.tailoredResume.personalInfo.targetRoleOrTags,
-          companyName: "Empresa da Vaga",
-          jobDescription: tailoredResult.atsOptimizationSummary,
+          jobTitle: jobDetails?.jobTitle || "Analista de Suporte N2/N3",
+          companyName: jobDetails?.companyName || "Empresa Cadastrada",
+          jobDescription: jobDetails?.jobDescription || tailoredResult.atsOptimizationSummary,
+          analysis: jobDetails?.analysis,
         });
 
-        setApplications((prev) => [newApp as any, ...prev]);
+        if (created && created.id) {
+          setApplications((prev) =>
+            prev.map((a) =>
+              a.id === newAppItem.id
+                ? { ...a, id: created.id, tailored_resume: tailoredResult.tailoredResume }
+                : a
+            )
+          );
+        }
       } catch (err) {
-        console.error("Erro ao persistir versão no Supabase:", err);
+        console.warn("Persistência no Supabase pendente:", err);
       }
     }
+
+    alert(
+      `Currículo gerado com sucesso para a vaga "${jobDetails?.jobTitle || "Vaga"}"!\n\nSeu currículo base permaneceu 100% intacto. A versão específica foi cadastrada no CRM de Candidaturas e pode ser baixada diretamente por lá!`
+    );
+    setCurrentTab("kanban");
+  };
+
+  const handleOpenEmailWithApp = (app: ApplicationItem) => {
+    setSelectedAppForEmail(app);
+    setCurrentTab("email");
   };
 
   return (
@@ -280,14 +333,21 @@ export const Home: React.FC = () => {
           </Badge>
 
           <PDFDownloadLink
-            document={<ResumePDFTemplate data={resumeData} />}
-            fileName="cv-renato-de-franca-lima.pdf"
+            document={<ResumePDFTemplate data={previewResume} />}
+            fileName={
+              previewResume === masterResume
+                ? "cv-renato-de-franca-lima.pdf"
+                : `cv-renato-de-franca-lima-${previewResume.personalInfo.targetRoleOrTags
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]/g, "-")
+                    .slice(0, 30)}.pdf`
+            }
             style={{ textDecoration: "none" }}
           >
             {({ loading }) => (
               <Button $primary disabled={loading}>
                 <Download size={16} />
-                {loading ? "Preparando PDF..." : "Baixar PDF Oficial"}
+                {loading ? "Preparando PDF..." : previewResume === masterResume ? "Baixar PDF Oficial" : "Baixar CV Visualizado"}
               </Button>
             )}
           </PDFDownloadLink>
@@ -341,53 +401,83 @@ export const Home: React.FC = () => {
       {currentTab === "kanban" ? (
         <ApplicationsKanban
           applications={applications}
+          masterProfile={masterResume}
           onStatusChange={handleStatusChange}
+          onSendEmail={handleOpenEmailWithApp}
         />
       ) : currentTab === "metrics" ? (
         <DashboardMetrics applications={applications} />
       ) : currentTab === "email" ? (
         <EmailSenderModal
           userId={user?.id || ""}
-          candidateName={resumeData.personalInfo.fullName.replace(/\s+/g, " ").trim()}
+          candidateName={masterResume.personalInfo.fullName.replace(/\s+/g, " ").trim()}
+          masterProfile={masterResume}
+          availableApplications={applications}
+          selectedApp={selectedAppForEmail}
           onSent={() => setCurrentTab("kanban")}
         />
       ) : currentTab === "analyze" ? (
         <JobAnalyzer
-          masterProfile={resumeData}
+          masterProfile={masterResume}
           onGenerateResume={handleGenerateTailored}
         />
       ) : currentTab === "edit" ? (
         <ProfileEditor
-          data={resumeData}
+          data={masterResume}
           onSave={handleSaveProfile}
           isSaving={isSaving}
         />
       ) : (
         <MainContent>
           <Sidebar>
-            <h2>Base da Verdade (Fatos Reais)</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <h2 style={{ margin: 0 }}>Base da Verdade (Fatos Reais)</h2>
+              {previewResume !== masterResume && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewResume(masterResume);
+                    setActiveResumeTitle("Currículo Base Oficial (N2/N3)");
+                  }}
+                  style={{
+                    fontSize: "0.75rem",
+                    padding: "4px 8px",
+                    borderRadius: 4,
+                    border: "1px solid #d0d0d0",
+                    background: "#f5f5f5",
+                    cursor: "pointer",
+                  }}
+                  title="Restaurar visualização do Currículo Base Oficial"
+                >
+                  Ver Base
+                </button>
+              )}
+            </div>
             <p>
-              Estes dados estão persistidos na tabela <code>master_facts</code> do seu Supabase.
-              Nenhum processo da IA poderá gerar experiências ou certificações fora deste conjunto.
+              Estes dados estão protegidos na base de fatos.
+              Nenhum processo da IA gera experiências ou certificações fora deste conjunto.
             </p>
+            <div style={{ margin: "10px 0", padding: "8px 12px", background: "#f0f4f8", borderRadius: 6, fontSize: "0.8rem", color: "#005fb8", fontWeight: 600 }}>
+              📄 Exibindo: {activeResumeTitle}
+            </div>
             <ul>
               <li>
-                <strong>Experiências:</strong> {resumeData.experiences.length} cadastradas
+                <strong>Experiências:</strong> {masterResume.experiences.length} cadastradas
               </li>
               <li>
-                <strong>Formações:</strong> {resumeData.education.length} registradas
+                <strong>Formações:</strong> {masterResume.education.length} registradas
               </li>
               <li>
-                <strong>Certificações:</strong> {resumeData.certifications.length} validadas
+                <strong>Certificações:</strong> {masterResume.certifications.length} validadas
               </li>
               <li>
-                <strong>Habilidades:</strong> {resumeData.skills.length} categorias
+                <strong>Habilidades:</strong> {masterResume.skills.length} categorias
               </li>
             </ul>
           </Sidebar>
 
           <PreviewArea>
-            <ResumeWebPreview data={resumeData} />
+            <ResumeWebPreview data={previewResume} />
           </PreviewArea>
         </MainContent>
       )}

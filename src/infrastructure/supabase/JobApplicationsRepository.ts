@@ -1,6 +1,7 @@
 import { supabase } from "./client";
 import type { ApplicationStatus, WorkModel } from "../../shared/types/database.types";
 import type { JobAnalysis } from "../../domain/entities/JobAnalysis";
+import type { ResumeData } from "../../domain/entities/Resume";
 
 export interface CreateApplicationParams {
   userId: string;
@@ -28,6 +29,7 @@ export interface ApplicationItem {
   salary_offered: number | null;
   notes: string | null;
   created_at: string;
+  tailored_resume?: ResumeData | null;
   jobs?: {
     title: string;
     raw_description: string;

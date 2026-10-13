@@ -22,6 +22,22 @@ export const JobAnalysisSchema = z.object({
   ),
   gaps: z.array(z.string()),                  // Requisitos da vaga que Renato NÃO possui (honestidade ATS)
   recommendedHighlight: z.string(),           // Resumo do que destacar no currículo
+  interviewPrep: z.object({                   // Preparação para entrevista e respostas para perguntas comuns
+    salaryExpectationGuide: z.object({
+      suggestedCLT: z.string(),
+      suggestedPJ: z.string().optional(),
+      justification: z.string(),
+    }),
+    motivationResponse: z.string(),           // O que motivou a se candidatar para a vaga
+    commonQuestions: z.array(
+      z.object({
+        question: z.string(),
+        suggestedAnswer: z.string(),
+        keyPointsToHighlight: z.array(z.string()),
+      })
+    ),
+    preparationTips: z.array(z.string()),     // Dicas de estudo e postura técnica
+  }).optional(),
 });
 
 export type JobAnalysis = z.infer<typeof JobAnalysisSchema>;
