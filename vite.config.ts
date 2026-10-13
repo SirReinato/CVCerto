@@ -95,4 +95,20 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes("node_modules")) {
+            if (id.includes("@react-pdf")) return "pdf";
+            if (id.includes("recharts")) return "charts";
+            if (id.includes("lucide-react")) return "icons";
+            if (id.includes("@supabase")) return "supabase";
+            return "vendor";
+          }
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1200,
+  },
 });

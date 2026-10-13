@@ -1,22 +1,55 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense, lazy } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import { MasterProfileRepository } from "../infrastructure/supabase/MasterProfileRepository";
 import { MASTER_PROFILE } from "../shared/constants/masterProfile";
 import type { ResumeData } from "../domain/entities/Resume";
 import { ResumeCanvas } from "../presentation/components/ResumeCanvas";
 import { WorkspaceLayout } from "../presentation/components/WorkspaceLayout";
-import { ProfileEditor } from "../presentation/components/ProfileEditor";
-import { JobAnalyzer } from "../presentation/components/JobAnalyzer";
-import { ApplicationsKanban } from "../presentation/components/ApplicationsKanban";
-import { DashboardMetrics } from "../presentation/components/DashboardMetrics";
-import { EmailSenderModal } from "../presentation/components/EmailSenderModal";
 import { ResumeVersionsRepository } from "../infrastructure/supabase/ResumeVersionsRepository";
 import { JobApplicationsRepository, type ApplicationItem } from "../infrastructure/supabase/JobApplicationsRepository";
 import type { TailoredResumeResult } from "../domain/rules/ResumeTailoringEngine";
 import type { ApplicationStatus } from "../shared/types/database.types";
+import { Loader2 } from "lucide-react";
+
+// Code-Splitting: Carregamento sob demanda das abas mais pesadas
+const ProfileEditor = lazy(() =>
+  import("../presentation/components/ProfileEditor").then((m) => ({ default: m.ProfileEditor }))
+);
+const JobAnalyzer = lazy(() =>
+  import("../presentation/components/JobAnalyzer").then((m) => ({ default: m.JobAnalyzer }))
+);
+const ApplicationsKanban = lazy(() =>
+  import("../presentation/components/ApplicationsKanban").then((m) => ({ default: m.ApplicationsKanban }))
+);
+const DashboardMetrics = lazy(() =>
+  import("../presentation/components/DashboardMetrics").then((m) => ({ default: m.DashboardMetrics }))
+);
+const EmailSenderModal = lazy(() =>
+  import("../presentation/components/EmailSenderModal").then((m) => ({ default: m.EmailSenderModal }))
+);
+
+const TabLoader: React.FC = () => (
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: "360px",
+      gap: "10px",
+      color: "#64748b",
+      fontSize: "0.9rem",
+      fontWeight: 500,
+    }}
+  >
+    <Loader2 size={24} className="animate-spin" style={{ animation: "spin 1s linear infinite" }} />
+    <span>Carregando módulo do workspace...</span>
+  </div>
+);
 
 export const Home: React.FC = () => {
   const { user, signOut } = useAuth();
+  const { showSuccess, showError, showWarning, showInfo } = useToast();
   const [masterResume, setMasterResume] = useState<ResumeData>(MASTER_PROFILE);
   const [previewResume, setPreviewResume] = useState<ResumeData>(MASTER_PROFILE);
   const [activeResumeTitle, setActiveResumeTitle] = useState<string>("Currículo Base Oficial (N2/N3)");
@@ -45,7 +78,7 @@ export const Home: React.FC = () => {
         prev.map((a) => (a.id === appId ? { ...a, status: newStatus } : a))
       );
     } catch {
-      alert("Erro ao atualizar status da candidatura.");
+      showError("Não foi possível atualizar o status da candidatura no banco de dados.", "Erro ao Atualizar");
     }
   };
 
@@ -56,15 +89,13 @@ export const Home: React.FC = () => {
       await MasterProfileRepository.saveProfile(user.id, updated);
       setMasterResume(updated);
       setPreviewResume(updated);
-      alert("Perfil Mestre salvo e sincronizado com sucesso no Supabase!");
+      showSuccess("Perfil Mestre e Fatos Reais sincronizados com sucesso no Supabase!", "Perfil Salvo");
       setCurrentTab("preview");
     } catch (err: any) {
       console.warn("[Home] Falha ao persistir no Supabase:", err);
       setMasterResume(updated);
       setPreviewResume(updated);
-      alert(
-        "Aviso: Suas alterações foram atualizadas na visualização local."
-      );
+      showWarning("Suas alterações foram atualizadas no estado local.", "Aviso de Sincronização");
       setCurrentTab("preview");
     } finally {
       setIsSaving(false);
@@ -76,7 +107,10 @@ export const Home: React.FC = () => {
     jobDetails?: { jobTitle: string; companyName: string; jobDescription: string; analysis: any }
   ) => {
     if (!tailoredResult.validationReport.isValid) {
-      alert("Alerta de Invenção: O validador determinístico bloqueou a geração por inconsistência com o Perfil Mestre.");
+      showError(
+        "O validador determinístico bloqueou a geração por detectar inconsistência com a Base da Verdade.",
+        "Alerta Anti-Invenção"
+      );
       return;
     }
 
@@ -144,8 +178,9 @@ export const Home: React.FC = () => {
       }
     }
 
-    alert(
-      `Currículo gerado com sucesso para a vaga "${jobDetails?.jobTitle || "Vaga"}"!\n\nSeu currículo base permaneceu 100% intacto. A versão específica foi cadastrada no CRM de Candidaturas e pode ser baixada diretamente por lá!`
+    showSuccess(
+      `Currículo gerado para "${jobDetails?.jobTitle || "Vaga"}". Seu currículo base permaneceu 100% intacto e a versão específica foi adicionada ao CRM!`,
+      "Currículo Otimizado Gerado"
     );
     setCurrentTab("kanban");
   };
@@ -170,6 +205,7 @@ export const Home: React.FC = () => {
   const handleRestoreBase = () => {
     setPreviewResume(masterResume);
     setActiveResumeTitle("Currículo Base Oficial (N2/N3)");
+    showInfo("Visualização do Currículo Base Oficial (N2/N3) restaurada.", "Currículo Base");
   };
 
   const handleOpenEmailWithApp = (app: ApplicationItem) => {
@@ -191,41 +227,43 @@ export const Home: React.FC = () => {
       visibleSections={visibleSections}
       onToggleSection={handleToggleSection}
     >
-      {currentTab === "kanban" ? (
-        <ApplicationsKanban
-          applications={applications}
-          masterProfile={masterResume}
-          onStatusChange={handleStatusChange}
-          onSendEmail={handleOpenEmailWithApp}
-        />
-      ) : currentTab === "metrics" ? (
-        <DashboardMetrics applications={applications} />
-      ) : currentTab === "email" ? (
-        <EmailSenderModal
-          userId={user?.id || ""}
-          candidateName={masterResume.personalInfo.fullName.replace(/\s+/g, " ").trim()}
-          masterProfile={masterResume}
-          availableApplications={applications}
-          selectedApp={selectedAppForEmail}
-          onSent={() => setCurrentTab("kanban")}
-        />
-      ) : currentTab === "analyze" ? (
-        <JobAnalyzer
-          masterProfile={masterResume}
-          onGenerateResume={handleGenerateTailored}
-        />
-      ) : currentTab === "edit" ? (
-        <ProfileEditor
-          data={masterResume}
-          onSave={handleSaveProfile}
-          isSaving={isSaving}
-        />
-      ) : (
-        <ResumeCanvas
-          data={previewResume}
-          visibleSections={visibleSections}
-        />
-      )}
+      <Suspense fallback={<TabLoader />}>
+        {currentTab === "kanban" ? (
+          <ApplicationsKanban
+            applications={applications}
+            masterProfile={masterResume}
+            onStatusChange={handleStatusChange}
+            onSendEmail={handleOpenEmailWithApp}
+          />
+        ) : currentTab === "metrics" ? (
+          <DashboardMetrics applications={applications} />
+        ) : currentTab === "email" ? (
+          <EmailSenderModal
+            userId={user?.id || ""}
+            candidateName={masterResume.personalInfo.fullName.replace(/\s+/g, " ").trim()}
+            masterProfile={masterResume}
+            availableApplications={applications}
+            selectedApp={selectedAppForEmail}
+            onSent={() => setCurrentTab("kanban")}
+          />
+        ) : currentTab === "analyze" ? (
+          <JobAnalyzer
+            masterProfile={masterResume}
+            onGenerateResume={handleGenerateTailored}
+          />
+        ) : currentTab === "edit" ? (
+          <ProfileEditor
+            data={masterResume}
+            onSave={handleSaveProfile}
+            isSaving={isSaving}
+          />
+        ) : (
+          <ResumeCanvas
+            data={previewResume}
+            visibleSections={visibleSections}
+          />
+        )}
+      </Suspense>
     </WorkspaceLayout>
   );
 };

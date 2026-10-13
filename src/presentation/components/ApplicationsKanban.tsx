@@ -7,6 +7,7 @@ import type { ApplicationItem } from "../../infrastructure/supabase/JobApplicati
 import type { ResumeData } from "../../domain/entities/Resume";
 import { ResumePDFTemplate } from "../templates/ResumePDFTemplate";
 import { InterviewPrepModal } from "./InterviewPrepModal";
+import { useToast } from "../../context/ToastContext";
 
 interface ApplicationsKanbanProps {
   applications: ApplicationItem[];
@@ -42,14 +43,16 @@ const Board = styled.div`
   }
 `;
 
-const Column = styled.div`
+const Column = styled.div<{ $isDragOver?: boolean }>`
   flex: 0 0 280px;
-  background-color: #f4f4f4;
+  background-color: ${(props) => (props.$isDragOver ? "#eff6ff" : "#f4f4f4")};
+  border: ${(props) => (props.$isDragOver ? "2px dashed #2563eb" : "2px solid transparent")};
   border-radius: 8px;
   padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  transition: all 0.2s ease;
 `;
 
 const ColumnHeader = styled.div<{ $color: string }>`
@@ -76,7 +79,7 @@ const ColumnHeader = styled.div<{ $color: string }>`
   }
 `;
 
-const Card = styled.div`
+const Card = styled.div<{ $isDragging?: boolean }>`
   background-color: #ffffff;
   border-radius: 6px;
   padding: 14px;
@@ -85,6 +88,18 @@ const Card = styled.div`
   flex-direction: column;
   gap: 8px;
   border: 1px solid #e8e8e8;
+  cursor: grab;
+  opacity: ${(props) => (props.$isDragging ? 0.35 : 1)};
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+
+  &:hover {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
 
   h4 {
     font-size: 0.9rem;
@@ -129,7 +144,22 @@ export const ApplicationsKanban: React.FC<ApplicationsKanbanProps> = ({
   onStatusChange,
   onSendEmail,
 }) => {
+  const { showSuccess } = useToast();
   const [selectedAppModal, setSelectedAppModal] = useState<ApplicationItem | null>(null);
+  const [draggedAppId, setDraggedAppId] = useState<string | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<ApplicationStatus | null>(null);
+
+  const handleDropCard = (appId: string, newStatus: ApplicationStatus) => {
+    const app = applications.find((a) => a.id === appId);
+    if (!app || app.status === newStatus) return;
+
+    onStatusChange(appId, newStatus);
+    const targetCol = COLUMNS.find((c) => c.status === newStatus);
+    showSuccess(
+      `Candidatura movida para "${targetCol?.label || newStatus}"!`,
+      "Status Atualizado"
+    );
+  };
 
   return (
     <>
@@ -137,14 +167,47 @@ export const ApplicationsKanban: React.FC<ApplicationsKanbanProps> = ({
         {COLUMNS.map((col) => {
           const items = applications.filter((app) => app.status === col.status);
           return (
-            <Column key={col.status}>
+            <Column
+              key={col.status}
+              $isDragOver={dragOverColumn === col.status}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                setDragOverColumn(col.status);
+              }}
+              onDragLeave={() => {
+                setDragOverColumn((prev) => (prev === col.status ? null : prev));
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const appId = e.dataTransfer.getData("text/plain");
+                if (appId) {
+                  handleDropCard(appId, col.status);
+                }
+                setDragOverColumn(null);
+                setDraggedAppId(null);
+              }}
+            >
               <ColumnHeader $color={col.color}>
                 <h3>{col.label}</h3>
                 <span>{items.length}</span>
               </ColumnHeader>
 
               {items.map((app) => (
-                <Card key={app.id}>
+                <Card
+                  key={app.id}
+                  draggable={true}
+                  $isDragging={draggedAppId === app.id}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData("text/plain", app.id);
+                    e.dataTransfer.effectAllowed = "move";
+                    setDraggedAppId(app.id);
+                  }}
+                  onDragEnd={() => {
+                    setDraggedAppId(null);
+                    setDragOverColumn(null);
+                  }}
+                >
                   <h4>{app.jobs?.title || "Vaga Cadastrada"}</h4>
                   <div className="company">
                     <Building2 size={14} />

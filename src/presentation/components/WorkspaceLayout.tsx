@@ -18,10 +18,16 @@ import {
   User,
   ShieldCheck,
   Printer,
+  Copy,
+  FileDown,
+  GitCompare,
 } from "lucide-react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import type { ResumeData } from "../../domain/entities/Resume";
 import { ResumePDFTemplate } from "../templates/ResumePDFTemplate";
+import { AtsTextFormatter } from "../../domain/services/AtsTextFormatter";
+import { useToast } from "../../context/ToastContext";
+import { ResumeDiffModal } from "./ResumeDiffModal";
 
 export interface WorkspaceLayoutProps {
   currentTab: "preview" | "analyze" | "kanban" | "metrics" | "email" | "edit";
@@ -381,7 +387,29 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   onToggleSection,
   children,
 }) => {
+  const { showSuccess, showError } = useToast();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [diffModalOpen, setDiffModalOpen] = useState(false);
+
+  const handleCopyAtsText = async () => {
+    const success = await AtsTextFormatter.copyAtsTextToClipboard(activeResume);
+    if (success) {
+      showSuccess(
+        "Currículo em texto limpo copiado para a área de transferência! Perfeito para colar no Gupy/LinkedIn.",
+        "Texto ATS Copiado"
+      );
+    } else {
+      showError("Não foi possível copiar o texto automaticamente.", "Erro ao Copiar");
+    }
+    setExportMenuOpen(false);
+  };
+
+  const handleDownloadAtsTxt = () => {
+    AtsTextFormatter.downloadAtsTextFile(activeResume);
+    showSuccess("Download do arquivo .txt limpo para robôs ATS iniciado!", "Download Iniciado");
+    setExportMenuOpen(false);
+  };
 
   return (
     <div>
@@ -407,18 +435,120 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         </NavCenter>
 
         <NavRight>
-          <PDFDownloadLink
-            document={<ResumePDFTemplate data={activeResume} />}
-            fileName="cv-renato-de-franca-lima.pdf"
-            style={{ textDecoration: "none" }}
-          >
-            {({ loading }) => (
-              <PrimaryButton disabled={loading}>
-                <Download size={14} />
-                <span>{loading ? "Gerando..." : "Baixar PDF Oficial"}</span>
+          <div style={{ position: "relative" }}>
+            <div style={{ display: "flex", gap: 2 }}>
+              <PDFDownloadLink
+                document={<ResumePDFTemplate data={activeResume} />}
+                fileName="cv-renato-de-franca-lima.pdf"
+                style={{ textDecoration: "none" }}
+              >
+                {({ loading }) => (
+                  <PrimaryButton
+                    disabled={loading}
+                    style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
+                  >
+                    <Download size={14} />
+                    <span>{loading ? "Gerando..." : "Baixar PDF Oficial"}</span>
+                  </PrimaryButton>
+                )}
+              </PDFDownloadLink>
+              <PrimaryButton
+                type="button"
+                onClick={() => setExportMenuOpen(!exportMenuOpen)}
+                style={{
+                  borderTopLeftRadius: 0,
+                  borderBottomLeftRadius: 0,
+                  padding: "7px 8px",
+                  borderLeft: "1px solid rgba(255,255,255,0.2)",
+                }}
+                title="Mais opções de exportação para ATS"
+              >
+                <ChevronDown size={14} />
               </PrimaryButton>
+            </div>
+
+            {exportMenuOpen && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: 40,
+                  right: 0,
+                  backgroundColor: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 8,
+                  boxShadow: "0 10px 25px rgba(0,0,0,0.12)",
+                  padding: "6px 0",
+                  zIndex: 250,
+                  minWidth: 230,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={handleCopyAtsText}
+                  style={{
+                    width: "100%",
+                    padding: "9px 14px",
+                    fontSize: "0.82rem",
+                    fontWeight: 500,
+                    background: "none",
+                    border: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    cursor: "pointer",
+                    color: "#0f172a",
+                    textAlign: "left",
+                  }}
+                >
+                  <Copy size={14} color="#2563eb" /> Copiar Texto Limpo para ATS
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownloadAtsTxt}
+                  style={{
+                    width: "100%",
+                    padding: "9px 14px",
+                    fontSize: "0.82rem",
+                    fontWeight: 500,
+                    background: "none",
+                    border: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    cursor: "pointer",
+                    color: "#0f172a",
+                    textAlign: "left",
+                  }}
+                >
+                  <FileDown size={14} color="#16a34a" /> Baixar Arquivo .TXT para ATS
+                </button>
+                <div style={{ height: 1, backgroundColor: "#f1f5f9", margin: "4px 0" }} />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setExportMenuOpen(false);
+                    window.print();
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "9px 14px",
+                    fontSize: "0.82rem",
+                    fontWeight: 500,
+                    background: "none",
+                    border: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    cursor: "pointer",
+                    color: "#475569",
+                    textAlign: "left",
+                  }}
+                >
+                  <Printer size={14} /> Imprimir A4 Direto
+                </button>
+              </div>
             )}
-          </PDFDownloadLink>
+          </div>
 
           <UserDropdown onClick={() => setDropdownOpen(!dropdownOpen)}>
             <div className="avatar">
@@ -544,24 +674,48 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
               <div style={{ fontSize: "0.78rem", color: "#334155", lineHeight: 1.4 }}>
                 {activeResumeTitle}
               </div>
-              {activeResume !== masterResume && onRestoreBase && (
-                <button
-                  type="button"
-                  onClick={onRestoreBase}
-                  style={{
-                    padding: "6px 10px",
-                    fontSize: "0.74rem",
-                    fontWeight: 600,
-                    backgroundColor: "#f1f5f9",
-                    border: "1px solid #cbd5e1",
-                    borderRadius: 4,
-                    cursor: "pointer",
-                    color: "#0f172a",
-                    marginTop: 4,
-                  }}
-                >
-                  Restaurar Currículo Base
-                </button>
+              {activeResume !== masterResume && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
+                  <button
+                    type="button"
+                    onClick={() => setDiffModalOpen(true)}
+                    style={{
+                      padding: "6px 10px",
+                      fontSize: "0.74rem",
+                      fontWeight: 600,
+                      backgroundColor: "#eff6ff",
+                      border: "1px solid #bfdbfe",
+                      borderRadius: 4,
+                      cursor: "pointer",
+                      color: "#1d4ed8",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                    }}
+                    title="Comparar o currículo original com as priorizações feitas pela IA"
+                  >
+                    <GitCompare size={13} /> Comparar com Base (Diff)
+                  </button>
+                  {onRestoreBase && (
+                    <button
+                      type="button"
+                      onClick={onRestoreBase}
+                      style={{
+                        padding: "6px 10px",
+                        fontSize: "0.74rem",
+                        fontWeight: 600,
+                        backgroundColor: "#f1f5f9",
+                        border: "1px solid #cbd5e1",
+                        borderRadius: 4,
+                        cursor: "pointer",
+                        color: "#0f172a",
+                      }}
+                    >
+                      Restaurar Currículo Base
+                    </button>
+                  )}
+                </div>
               )}
             </InspectorCard>
 
@@ -639,6 +793,15 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
 
         <MainContentArea>{children}</MainContentArea>
       </WorkspaceContainer>
+
+      {diffModalOpen && (
+        <ResumeDiffModal
+          baseResume={masterResume}
+          tailoredResume={activeResume}
+          jobTitle={activeResumeTitle}
+          onClose={() => setDiffModalOpen(false)}
+        />
+      )}
     </div>
   );
 };
