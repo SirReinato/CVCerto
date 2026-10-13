@@ -33,6 +33,7 @@ export const ProjectSchema = z.object({
   name: z.string().min(1, "Nome do projeto é obrigatório"),
   stack: z.string().min(1), // Ex: "Next.js" ou "Laravel + React.js"
   description: z.string().min(1),
+  link: z.string().optional(), // Ex: "https://github.com/..." ou URL de demonstração
 });
 
 export const ResumeDataSchema = z.object({

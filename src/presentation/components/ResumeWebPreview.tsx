@@ -283,6 +283,22 @@ export const ResumeWebPreview: React.FC<ResumeWebPreviewProps> = ({ data }) => {
             <SkillCategory key={proj.id}>
               <h4>
                 • {proj.name} - {proj.stack}
+                {proj.link && (
+                  <a
+                    href={proj.link.startsWith("http") ? proj.link : `https://${proj.link}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      marginLeft: 8,
+                      fontSize: "0.75rem",
+                      color: "#1e1e1e",
+                      fontWeight: 500,
+                      textDecoration: "underline",
+                    }}
+                  >
+                    [Ver Projeto ↗]
+                  </a>
+                )}
               </h4>
               <ul style={{ listStyleType: "circle" }}>
                 <li>{proj.description}</li>

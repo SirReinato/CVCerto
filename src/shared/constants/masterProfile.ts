@@ -183,6 +183,7 @@ export const MASTER_PROFILE: ResumeData = {
       stack: "Next.js",
       description:
         "Plataforma web desenvolvida para centralizar tutoriais e guias técnicos voltados para equipes de suporte N1.",
+      link: "https://github.com/SirReinato",
     },
     {
       id: "p1a23456-7890-4abc-def1-000000000002",
@@ -190,6 +191,7 @@ export const MASTER_PROFILE: ResumeData = {
       stack: "Laravel + React.js",
       description:
         "Desenvolvimento de componentes, correção de bugs, integração com APIs e organização do código em componentes reutilizáveis.",
+      link: "https://github.com/SirReinato",
     },
     {
       id: "p1a23456-7890-4abc-def1-000000000003",
@@ -197,12 +199,14 @@ export const MASTER_PROFILE: ResumeData = {
       stack: "React.js",
       description:
         "Criação de interface responsiva, estados e consumo de API. Aprimoramento contínuo com foco em boas práticas.",
+      link: "https://github.com/SirReinato",
     },
     {
       id: "p1a23456-7890-4abc-def1-000000000004",
       name: "Livro de Receitas",
       stack: "React.js",
       description: "Criação de interface responsiva, estados e consumo de API.",
+      link: "https://github.com/SirReinato",
     },
   ],
   languages: ["Inglês – Intermediário"],

@@ -230,6 +230,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ data, onSave, isSa
       name: "Novo Projeto",
       stack: "Tecnologia / Stack Utilizada",
       description: "Descrição das atividades desenvolvidas, integrações e impactos.",
+      link: "",
     };
     setProfile((prev) => ({
       ...prev,
@@ -511,7 +512,7 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ data, onSave, isSa
             <DeleteButton onClick={() => handleDeleteProject(proj.id)} title="Remover projeto">
               <Trash2 size={16} />
             </DeleteButton>
-            <FieldGrid $cols={2}>
+            <FieldGrid $cols={3}>
               <FormGroup>
                 <label>Nome do Projeto</label>
                 <input
@@ -526,6 +527,14 @@ export const ProfileEditor: React.FC<ProfileEditorProps> = ({ data, onSave, isSa
                   value={proj.stack}
                   onChange={(e) => handleUpdateProject(proj.id, "stack", e.target.value)}
                   placeholder="Ex: Next.js ou Laravel + React"
+                />
+              </FormGroup>
+              <FormGroup>
+                <label>Link / Repositório / Demo (Opcional)</label>
+                <input
+                  value={proj.link || ""}
+                  onChange={(e) => handleUpdateProject(proj.id, "link", e.target.value)}
+                  placeholder="Ex: https://github.com/SirReinato/projeto"
                 />
               </FormGroup>
               <FormGroup style={{ gridColumn: "1 / -1" }}>

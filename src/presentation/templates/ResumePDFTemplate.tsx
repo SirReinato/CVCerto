@@ -4,6 +4,7 @@ import {
   Page,
   Text,
   View,
+  Link,
   StyleSheet,
 } from "@react-pdf/renderer";
 import type { ResumeData } from "../../domain/entities/Resume";
@@ -268,7 +269,15 @@ export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) =>
             {data.projects.map((proj) => (
               <View key={proj.id} style={{ marginBottom: 4 }}>
                 <Text style={styles.skillCategoryTitle}>
-                  • {proj.name} - {proj.stack}
+                  • {proj.name} - {proj.stack}{" "}
+                  {proj.link && (
+                    <Link
+                      src={proj.link.startsWith("http") ? proj.link : `https://${proj.link}`}
+                      style={{ fontSize: 8, color: "#1e1e1e", textDecoration: "underline" }}
+                    >
+                      [Ver Projeto]
+                    </Link>
+                  )}
                 </Text>
                 <View style={styles.bulletRow}>
                   <Text style={styles.bulletPoint}>◦</Text>
