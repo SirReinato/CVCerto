@@ -134,19 +134,12 @@ const Header = styled.header`
   margin-top: 8px;
 `;
 
-const NameBanner = styled.div`
-  background-color: #f2ede4;
-  padding: 8px 16px;
-  margin-bottom: 8px;
-  border-radius: 2px;
-`;
-
 const FullName = styled.h1`
-  font-size: 1.35rem;
-  letter-spacing: 4px;
+  font-size: 1.45rem;
+  letter-spacing: 0.5px;
   font-weight: 700;
   color: #111111;
-  margin: 0;
+  margin: 0 0 4px 0;
   text-transform: uppercase;
 `;
 
@@ -333,9 +326,7 @@ export const ResumeWebPreview: React.FC<ResumeWebPreviewProps> = ({ data }) => {
 
       {/* 3. Cabeçalho */}
       <Header>
-        <NameBanner>
-          <FullName>{data.personalInfo.fullName.toUpperCase()}</FullName>
-        </NameBanner>
+        <FullName>{data.personalInfo.fullName.toUpperCase()}</FullName>
         <TargetRole>{data.personalInfo.targetRoleOrTags.toUpperCase()}</TargetRole>
         <ContactInfo>
           {data.personalInfo.age && <div>{data.personalInfo.age.toUpperCase()}</div>}

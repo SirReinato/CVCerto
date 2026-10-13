@@ -118,25 +118,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginTop: 10,
   },
-  headerBanner: {
-    backgroundColor: "#F2EDE4",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    width: "100%",
-    alignItems: "center",
-    marginBottom: 8,
-  },
   fullName: {
-    fontSize: 16,
+    fontSize: 17,
     fontFamily: "Helvetica-Bold",
-    letterSpacing: 4,
     textAlign: "center",
     color: "#111111",
+    marginBottom: 4,
   },
   targetRole: {
-    fontSize: 8.5,
+    fontSize: 9,
     fontFamily: "Helvetica-Bold",
-    letterSpacing: 1.2,
+    letterSpacing: 0.5,
     textAlign: "center",
     color: "#333333",
     marginBottom: 6,
@@ -281,11 +273,9 @@ export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) =>
 
         {/* 3. CABEÇALHO */}
         <View style={styles.header}>
-          <View style={styles.headerBanner}>
-            <Text style={styles.fullName}>
-              {data.personalInfo.fullName.toUpperCase()}
-            </Text>
-          </View>
+          <Text style={styles.fullName}>
+            {data.personalInfo.fullName.toUpperCase()}
+          </Text>
           <Text style={styles.targetRole}>
             {data.personalInfo.targetRoleOrTags.toUpperCase()}
           </Text>
