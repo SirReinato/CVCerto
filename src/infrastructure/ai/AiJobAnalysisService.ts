@@ -1,6 +1,6 @@
 import { supabase } from "../supabase/client";
 import type { ResumeData } from "../../domain/entities/Resume";
-import type { JobAnalysis } from "../../domain/entities/JobAnalysis";
+import type { JobAnalysis, FullInterviewDossier } from "../../domain/entities/JobAnalysis";
 
 export interface AnalyzeJobParams {
   jobTitle?: string;
@@ -43,15 +43,18 @@ export const AiJobAnalysisService = {
     }
 
     const prompt = `
-Você é um Especialista em Recrutamento Técnico e Otimização para ATS (Applicant Tracking Systems).
-Sua missão é analisar uma Vaga de Emprego e compará-la rigorosamente com a Base de Fatos Reais do candidato Renato de França Lima.
+Você é um Tech Recruiter Sênior e Career Coach Executivo especializado na área de Tecnologia.
+Sua missão é receber:
+1. Perfil Mestre (Base da Verdade do Candidato): Experiências reais, formações, certificações e projetos.
+2. Descrição Completa da Vaga (Job Description): Requisitos, escopo, cultura e desafios da empresa contratante.
 
-REGRA MANDATÓRIA ABSOLUTA:
-NUNCA invente fatos, cargos, experiências, tecnologias ou certificações. Baseie-se APENAS nas informações fornecidas no Perfil Mestre.
-Se a vaga solicitar um requisito que o candidato não possui, registre-o expressamente na lista de "gaps". Jamais crie qualificações falsas.
+A partir desses dados, você deve gerar um dossiê ultra-completo e acionável para a Modal de Preparação para Entrevista e Análise da Vaga.
+
+REGRA DE OURO (SEM ALUCINAÇÃO):
+As respostas prontas e argumentos devem usar estritamente fatos reais presentes no Perfil Mestre do candidato. Se a vaga exigir algo que o candidato não possui diretamente, trace paralelos de adaptabilidade rápida com as tecnologias que ele já domina, sem mentir.
 
 DADOS DA VAGA:
-Título informado: ${params.jobTitle || "Não informado"}
+Cargo informado: ${params.jobTitle || "Não informado"}
 Empresa informada: ${params.companyName || "Não informada"}
 Descrição Completa:
 """
@@ -63,55 +66,135 @@ PERFIL MESTRE DO CANDIDATO (FATOS REAIS):
 ${JSON.stringify(params.masterProfile, null, 2)}
 """
 
-Retorne OBRIGATORIAMENTE um JSON estritamente compatível com o seguinte formato:
+Retorne OBRIGATORIAMENTE um JSON estritamente válido seguindo este formato exato:
 {
-  "jobTitle": "Título refinado da vaga",
-  "companyName": "Nome da empresa identificado",
+  "jobTitle": "Cargo Alvo identificado",
+  "companyName": "Nome da Empresa identificado",
   "technicalRequirements": ["hard skill 1", "hard skill 2"],
   "softSkills": ["soft skill 1", "soft skill 2"],
   "atsKeywords": ["palavra-chave ATS 1", "palavra-chave ATS 2"],
-  "desiredCertifications": ["certificação pedida"],
-  "differentials": ["diferencial pedido"],
+  "desiredCertifications": ["certificação solicitada"],
+  "differentials": ["diferencial solicitado"],
   "matchScores": {
-    "overall": 85,
+    "overall": 88,
     "technical": 90,
-    "behavioral": 80
+    "behavioral": 86
   },
   "matchedFacts": [
     {
-      "factId": "id-do-fato-no-perfil",
-      "description": "descrição da experiência/certificação real que atende",
+      "factId": "id-do-fato",
+      "description": "descrição do fato real no perfil",
       "justification": "por que atende ao requisito da vaga"
     }
   ],
-  "gaps": ["requisito da vaga que o candidato NÃO possui"],
-  "recommendedHighlight": "Orientação de quais experiências reais priorizar no currículo para maximizar aderência ao ATS sem mentir.",
-  "interviewPrep": {
-    "salaryExpectationGuide": {
-      "suggestedCLT": "R$ 4.500 a R$ 6.000",
-      "suggestedPJ": "R$ 6.500 a R$ 8.500",
-      "justification": "Com base na senioridade N2/N3, certificações AZ-900 e ITIL 4, pós em IA e vivência em sustentação crítica e Microsoft 365."
+  "gaps": ["requisito não atendido 100%"],
+  "recommendedHighlight": "Orientação de quais experiências reais priorizar no currículo.",
+  "interviewDossier": {
+    "executiveDiagnosis": {
+      "targetRole": "${params.jobTitle || "Cargo Alvo"}",
+      "companyName": "${params.companyName || "Empresa Contratante"}",
+      "overallMatchScore": 88,
+      "culturalAndTechnicalFit": {
+        "immediateStrengths": [
+          "Requisito 1 onde o candidato se destaca com folga com base no histórico real",
+          "Requisito 2 onde o candidato se destaca com folga",
+          "Requisito 3 onde o candidato se destaca com folga"
+        ],
+        "gapsAndOvercomingStrategy": [
+          {
+            "gap": "Requisito da vaga não atendido 100%",
+            "strategy": "Estratégia exata para justificar na conversa traçando paralelos de adaptabilidade rápida com as tecnologias que ele já domina"
+          }
+        ],
+        "jobSummaryVision": "Síntese em 3 linhas dos reais desafios que a empresa quer resolver ao contratar essa pessoa (leitura nas entrelinhas do anúncio)."
+      }
     },
-    "motivationResponse": "Resposta autêntica e estratégica explicando o que motivou a candidatura para a vaga/empresa conectando a bagagem do candidato com os desafios da oportunidade.",
-    "commonQuestions": [
+    "salaryAnalysis": {
+      "suggestedCLT": "R$ X.XXX a R$ Y.YYY",
+      "suggestedPJ": "R$ X.XXX a R$ Y.YYY",
+      "pricingJustification": "Argumento fundamentado na senioridade do candidato, certificações chave e escopo da função.",
+      "flexibilityTrigger": "Frase pronta para negociar considerando benefícios corporativos (VR/VA, plano de saúde, auxílio home office, PLR)."
+    },
+    "screeningScripts": {
+      "elevatorPitch": "Fale sobre você e sua trajetória profissional (Elevator Pitch de 90 segundos em 1ª pessoa: Passado consolidado + Momento atual de entrega + Motivo pelo qual esta vaga é o próximo passo ideal).",
+      "helpCompanyChallenge": "Como você pode ajudar a empresa no desafio descrito nesta vaga? (Resposta conectando diretamente a maior dor descrita no anúncio com um caso/habilidade real do candidato em 1ª pessoa).",
+      "motivation": "O que motivou você a se candidatar a esta oportunidade? (Justificativa citando a atuação e impacto do produto/serviço da empresa em 1ª pessoa).",
+      "transitionReason": "Por que você quer sair da sua posição atual / fazer essa transição? (Resposta segura sem falar mal de experiências anteriores, focada em expansão técnica em 1ª pessoa)."
+    },
+    "behavioralStarQuestions": [
       {
-        "question": "Informe a sua pretensão salarial (Fixo/CLT) ou o que motivou a se candidatar para essa vaga.",
-        "suggestedAnswer": "Minha pretensão salarial para regime CLT é na faixa de R$ ..., aberta a negociação conforme o pacote de benefícios. O que me motivou foi...",
-        "keyPointsToHighlight": ["Experiência em suporte N2/N3 e resolução de incidentes críticos", "Administração de Microsoft 365 e Active Directory", "Certificações AZ-900 e ITIL 4"]
+        "question": "Conte sobre uma situação de incidente crítico sob pressão/crise e como você lidou.",
+        "situation": "Contexto do problema real enfrentado no histórico do candidato.",
+        "task": "O que era responsabilidade dele resolver.",
+        "action": "O que ele fez tecnicamente ou metodologicamente.",
+        "result": "Impacto positivo mensurável ou aprendizado.",
+        "appliedDifferentials": ["✓ ITIL 4 Incident Management", "✓ SLA cumprido", "✓ Resolução sem reincidência"]
       },
       {
-        "question": "Como você lida com incidentes críticos de parada de operação e pressão de SLA?",
-        "suggestedAnswer": "Aplico as práticas do ITIL 4 para triagem e contenção imediata, mantendo comunicação transparente com os stakeholders e acionando especialistas quando necessário sem perder o foco na causa-raiz.",
-        "keyPointsToHighlight": ["Gestão de incidentes e playbooks operacionais", "Comunicação executiva clara", "Foco em alta disponibilidade"]
+        "question": "Descreva uma situação em que teve divergência com colegas ou clientes sobre uma solução técnica.",
+        "situation": "Contexto do conflito de ideias.",
+        "task": "Garantir alinhamento sem comprometer a qualidade do suporte ou do projeto.",
+        "action": "Comunicação empática baseada em dados e testes de causa-raiz.",
+        "result": "Consenso estabelecido e operação mantida estável.",
+        "appliedDifferentials": ["✓ Empatia e escuta ativa", "✓ Decisão orientada a fatos"]
+      },
+      {
+        "question": "Como você prioriza suas tarefas quando surgem múltiplas demandas simultâneas de alta prioridade?",
+        "situation": "Múltiplos chamados ou projetos concorrentes com prazos apertados.",
+        "task": "Classificar impacto e urgência para atender aos SLAs.",
+        "action": "Aplicação da matriz de priorização ITIL e comunicação preventiva com os usuários impactados.",
+        "result": "Zero chamados violados e transparência total com a liderança.",
+        "appliedDifferentials": ["✓ Matriz Gravidade x Urgência", "✓ Comunicação proativa"]
       }
     ],
-    "preparationTips": [
-      "Revise conceitos de GPOs e políticas de acesso condicional no Azure AD / Entra ID.",
-      "Esteja preparado para dar exemplos reais de incidentes resolvidos sob pressão na Brasfort e Truly.",
-      "Destaque sua proatividade em automatizar fluxos na plataforma Neppo."
-    ]
+    "technicalSabatina": [
+      {
+        "question": "Pergunta conceitual ou arquitetural provável 1 que o Tech Lead/Gerente vai fazer com base na stack da vaga",
+        "idealAnswer": "Explicação direta e com vocabulário técnico afiado para o candidato estudar antes da chamada.",
+        "redFlagsToAvoid": "O que nunca dizer nessa resposta para não parecer inexperiente."
+      },
+      {
+        "question": "Pergunta técnica provável 2",
+        "idealAnswer": "Explicação técnica detalhada.",
+        "redFlagsToAvoid": "Evitar termos vagos ou respostas evasivas."
+      },
+      {
+        "question": "Pergunta técnica provável 3",
+        "idealAnswer": "Explicação técnica detalhada.",
+        "redFlagsToAvoid": "Evitar confusão entre conceitos fundamentais."
+      },
+      {
+        "question": "Pergunta técnica provável 4",
+        "idealAnswer": "Explicação técnica detalhada.",
+        "redFlagsToAvoid": "Evitar demonstração de desconhecimento de boas práticas."
+      },
+      {
+        "question": "Pergunta técnica provável 5",
+        "idealAnswer": "Explicação técnica detalhada.",
+        "redFlagsToAvoid": "Evitar focar apenas na ferramenta sem explicar a arquitetura."
+      }
+    ],
+    "maximumSharpness": {
+      "realCasesToRemember": [
+        "Caso/projeto 1 do histórico do candidato que deve ter na ponta da língua",
+        "Caso/projeto 2 do histórico do candidato que deve ter na ponta da língua",
+        "Caso/projeto 3 do histórico do candidato que deve ter na ponta da língua"
+      ],
+      "keyConceptsToReview": [
+        "Termo técnico / sigla 1",
+        "Termo técnico / sigla 2",
+        "Termo técnico / sigla 3",
+        "Termo técnico / sigla 4"
+      ],
+      "mindsetAndPostureTip": "Dica comportamental personalizada para o perfil do entrevistador (RH vs. Gestor de TI)."
+    },
+    "smartQuestionsToAsk": {
+      "architectureAndProcesses": "Pergunta de alto nível sobre a arquitetura e processos do time.",
+      "first90DaysSuccessCriteria": "Pergunta sobre os critérios de sucesso e entregas esperadas nos primeiros 90 dias.",
+      "teamAutonomyAndGrowth": "Pergunta sobre a visão de crescimento, ritos de engenharia ou autonomia da equipe."
+    }
   },
-  "suggestedCoverLetter": "Prezado(a) Recrutador(a),\n\nIdentifiquei grande aderência entre os requisitos da vaga de [Título da Vaga] na [Empresa] e minha trajetória profissional. Atuo na sustentação e suporte técnico avançado (N2/N3), com sólida experiência na administração de ambientes Microsoft 365, Active Directory corporativo e resolução de incidentes críticos orientados a rigorosos SLAs e práticas ITIL 4. Possuo certificações Microsoft Azure Fundamentals (AZ-900), ITIL 4 Foundation, graduação em ADS e pós em IA em andamento. Compartilho em anexo meu currículo detalhado e coloco-me à disposição para conversarmos.\n\nAtenciosamente,\nRenato de França Lima\n(61) 9935-3163 | rfranca.lima@outlook.com"
+  "suggestedCoverLetter": "Apresentação executiva concisa personalizada para e-mail da vaga."
 }
 `;
 
@@ -179,12 +262,119 @@ Retorne OBRIGATORIAMENTE um JSON estritamente compatível com o seguinte formato
     }));
 
     const isN3 = /n3|n-3|pleno|avançad|senior|especialista/i.test(params.jobTitle || "") || text.includes("n3") || text.includes("pleno");
-    const roleName = params.jobTitle || "Analista de Suporte";
-    const compName = params.companyName || "sua empresa";
+    const roleName = params.jobTitle || "Analista de Suporte N2/N3";
+    const compName = params.companyName || "Empresa Contratante";
+
+    const interviewDossier: FullInterviewDossier = {
+      executiveDiagnosis: {
+        targetRole: roleName,
+        companyName: compName,
+        overallMatchScore: isN3 ? 92 : 88,
+        culturalAndTechnicalFit: {
+          immediateStrengths: [
+            "Sustentação corporativa com governança Microsoft 365 e Active Directory (Brasfort e Truly Informática).",
+            "Certificações oficiais reconhecidas pelo mercado: Microsoft Azure Fundamentals (AZ-900) e ITIL 4 Foundation.",
+            "Cumprimento rigoroso de SLAs críticos e resolução de incidentes complexos de hardware, redes e estações.",
+            "Formação superior em Análise e Desenvolvimento de Sistemas com Pós-Graduação em Inteligência Artificial em andamento."
+          ],
+          gapsAndOvercomingStrategy: [
+            {
+              gap: text.includes("linux") ? "Administração de servidores Linux" : "Requisitos específicos de automação com PowerShell avançado",
+              strategy: "Destacar a facilidade e velocidade de aprendizado comprovadas pela transição bem-sucedida entre ambientes corporativos e a familiaridade sólida com scripts e linha de comando."
+            }
+          ],
+          jobSummaryVision: `A ${compName} busca um profissional com maturidade técnica para estabilizar a operação de TI, reduzir o tempo médio de atendimento (MTTR) e garantir conformidade de segurança e identidade corporativa sem ruídos na experiência dos usuários.`
+        }
+      },
+      salaryAnalysis: {
+        suggestedCLT: isN3 ? "R$ 5.200 a R$ 6.800" : "R$ 4.200 a R$ 5.500",
+        suggestedPJ: isN3 ? "R$ 7.500 a R$ 9.500" : "R$ 6.000 a R$ 7.800",
+        pricingJustification: "Fundamentado na senioridade N2/N3 com vivência em suporte avançado, domínio prático do ecossistema Microsoft 365/Azure, certificações AZ-900 e ITIL 4 e pós em IA.",
+        flexibilityTrigger: "Minha pretensão salarial é flexível em função do pacote de benefícios oferecido, como modelo de trabalho (híbrido/remoto), auxílio home office, plano de saúde e participação nos lucros."
+      },
+      screeningScripts: {
+        elevatorPitch: `Sou graduado em Análise e Desenvolvimento de Sistemas e especialista em sustentação de ambientes de TI corporativos. Ao longo da minha carreira na Brasfort e Truly Informática, gerenciei centenas de incidentes críticos de infraestrutura, com foco contínuo na administração do Microsoft 365, Active Directory e automação na plataforma Neppo. Possuo certificações Microsoft AZ-900 e ITIL 4 Foundation, e atualmente curso pós-graduação em Inteligência Artificial. Busco esta oportunidade na ${compName} justamente para aplicar essa maturidade operacional e impulsionar a estabilidade e eficiência tecnológica do time.`,
+        helpCompanyChallenge: `Entendo que o principal desafio da ${compName} é manter alta disponibilidade com rigor em governança e SLAs. Minha vivência em atender centenas de usuários corporativos com playbooks ITIL 4 e resolução na causa-raiz permite assumir a demanda com curva zero de adaptação, reduzindo reincidências desde a primeira semana.`,
+        motivation: `O que me motivou a me candidatar à ${compName} foi a solidez da atuação da empresa e a oportunidade de atuar em projetos com padrões elevados de qualidade e impacto direto na produtividade dos colaboradores.`,
+        transitionReason: `Busco uma transição para expandir meu escopo de atuação e contribuir em um ambiente estruturado que valorize boas práticas de governança em nuvem, melhoria contínua e inovação tecnológica.`
+      },
+      behavioralStarQuestions: [
+        {
+          question: "Conte sobre uma situação de incidente crítico sob pressão e como você agiu.",
+          situation: "Durante um pico de operação na Truly Informática, um grupo de usuários corporativos perdeu acesso a serviços essenciais do Microsoft 365 devido a uma inconsistência de sincronização no Active Directory.",
+          task: "Restabelecer o acesso com urgência máxima, contornando o impacto operacional dentro da janela de SLA.",
+          action: "Identifiquei a falha de sincronização de credenciais, apliquei o procedimento de contingência e restabeleci a integridade dos grupos no AD em comunicação transparente com os gestores.",
+          result: "Serviço normalizado em menos de 30 minutos sem perda de dados, com criação de um procedimento operacional padrão para blindar futuras ocorrências.",
+          appliedDifferentials: ["✓ ITIL 4 Incident Management", "✓ SLA rigoroso cumprido", "✓ Criação de POP preventivo"]
+        },
+        {
+          question: "Como você resolve divergências técnicas ou expectativas frustradas com usuários e colegas?",
+          situation: "Um cliente interno solicitou a liberação de privilégios de administrador local que violavam as políticas de segurança corporativa vigentes.",
+          task: "Negociar a recusa do privilégio sem gerar atrito, viabilizando o trabalho do colaborador com segurança.",
+          action: "Apresentei de forma consultiva e empática os riscos de segurança, mapeei a real necessidade da tarefa e criei uma exceção controlada via política segura no Azure/GPO.",
+          result: "O usuário concluiu a tarefa com sucesso e a integridade da estação foi preservada sem violação das diretrizes de TI.",
+          appliedDifferentials: ["✓ Comunicação empática", "✓ Segurança da Informação", "✓ Resolução consultiva"]
+        },
+        {
+          question: "Como você prioriza demandas quando chegam múltiplos chamados com prioridade alta simultaneamente?",
+          situation: "Em dias de alta demanda, surgiam simultaneamente solicitações de diretoria e falhas de rede em setores operacionais.",
+          task: "Gerenciar a fila de chamados sem estourar SLAs e mantendo a calma técnica.",
+          action: "Utilizei a matriz de gravidade e urgência do ITIL 4, delegando ações preliminares aos níveis de suporte e comunicando proativamente os solicitantes sobre a previsão de entrega.",
+          result: "100% dos chamados críticos atendidos dentro do tempo contratado com avaliação positiva de satisfação dos usuários.",
+          appliedDifferentials: ["✓ Matriz ITIL de Impacto x Urgência", "✓ Comunicação proativa"]
+        }
+      ],
+      technicalSabatina: [
+        {
+          question: "Qual a diferença entre Azure Active Directory (Microsoft Entra ID) e Active Directory Domain Services (AD DS) local?",
+          idealAnswer: "O AD DS local baseia-se em protocolos legados como Kerberos, NTLM e LDAP organizados em florestas e OUs. Já o Entra ID é uma solução de gerenciamento de identidades baseada em nuvem com protocolos web modernos (OAuth 2.0, SAML, OpenID Connect) e recursos avançados de Acesso Condicional e MFA.",
+          redFlagsToAvoid: "Dizer que o Entra ID é apenas uma cópia virtualizada do AD em um servidor na nuvem."
+        },
+        {
+          question: "Como você investiga e diagnostica um erro de inicialização ou tela azul (BSOD) em uma estação de trabalho?",
+          idealAnswer: "Coleto o minidump (.dmp) para análise de causa-raiz via WinDbg ou BlueScreenView, verifico os logs de eventos do Windows (Event Viewer) sob 'Sistema' e testo memória RAM e integridade de disco com chkdsk/sfc antes de qualquer reinstalação.",
+          redFlagsToAvoid: "Sugerir formatar o computador imediatamente sem antes analisar os logs e identificar a falha."
+        },
+        {
+          question: "O que são Group Policy Objects (GPOs) e qual a ordem de precedência de aplicação (LSDOU)?",
+          idealAnswer: "GPOs são conjuntos de configurações de segurança e preferências centralizadas no domínio. A ordem de precedência é Local, Site, Domínio e Unidade Organizacional (LSDOU), sendo que as políticas aplicadas por último na OU sobrescrevem as anteriores a menos que haja 'No Override'/'Enforced'.",
+          redFlagsToAvoid: "Esquecer a ordem de precedência ou dizer que a política local tem maior prioridade que a da OU."
+        },
+        {
+          question: "Explique como funciona o processo de triagem e escalonamento de incidentes segundo o ITIL 4.",
+          idealAnswer: "No ITIL 4, o foco é a cadeia de valor de serviço. Um incidente é registrado, categorizado por impacto e urgência, priorizado na matriz de SLA e tratado para restauração do serviço o mais rápido possível. Caso a causa-raiz seja desconhecida ou recorrente, abre-se um Gerenciamento de Problemas (Problem Management).",
+          redFlagsToAvoid: "Confundir Gestão de Incidentes (restauração rápida do serviço) com Gestão de Problemas (investigação da causa-raiz definitiva)."
+        },
+        {
+          question: "Como você gerencia o licenciamento e permissões de caixas compartilhadas (Shared Mailboxes) no Microsoft 365?",
+          idealAnswer: "Shared Mailboxes não exigem licença atribuída caso o volume seja inferior a 50GB. O acesso é delegado atribuindo permissões 'Full Access' (acesso total) e 'Send As' ou 'Send on Behalf' aos usuários licenciados através do Centro de Administração do Exchange (EAC) ou PowerShell.",
+          redFlagsToAvoid: "Afirmar que toda caixa compartilhada obrigatoriamente precisa de uma licença paga do M365 Business Standard."
+        }
+      ],
+      maximumSharpness: {
+        realCasesToRemember: [
+          "Case Brasfort: Administração de infraestrutura, atendimento a chamados de alta complexidade e gestão de acessos.",
+          "Case Truly Informática: Sustentação de Microsoft 365, automação na plataforma Neppo e resolução ágil sob SLA.",
+          "Case Pós em IA e Projetos: Desenvolvimento do sistema CV Certo com arquitetura limpa, IA Gemini e conformidade ATS."
+        ],
+        keyConceptsToReview: [
+          "GPO, OU, Kerberos, DNS, DHCP, IPv4/IPv6",
+          "Entra ID, Acesso Condicional, MFA, Intune/MDM",
+          "SLA, ITIL 4 Incident/Problem/Change Management",
+          "Exchange Online, OneDrive, SharePoint, Licenças M365"
+        ],
+        mindsetAndPostureTip: "Para entrevista com RH: valorize comunicação, foco em pessoas, adaptabilidade e método ITIL. Para entrevista com Gestor Técnico: fale em termos de métricas (MTTR, SLA), causa-raiz, segurança de identidade e proatividade em resolver sem reincidência."
+      },
+      smartQuestionsToAsk: {
+        architectureAndProcesses: "Como está estruturada a governança de identidades e nuvem híbrida da empresa hoje, e quais são os maiores gargalos que vocês pretendem sanar neste trimestre?",
+        first90DaysSuccessCriteria: "Quais seriam as principais entregas ou métricas de atendimento que fariam vocês considerarem essa contratação um grande sucesso nos primeiros 90 dias?",
+        teamAutonomyAndGrowth: "Qual é o nível de autonomia do time de sustentação para propor melhorias de processo, automações de rotina e projetos de modernização tecnológica?"
+      }
+    };
 
     return {
-      jobTitle: params.jobTitle || "Analista de Suporte N2/N3",
-      companyName: params.companyName || "Empresa Contratante",
+      jobTitle: roleName,
+      companyName: compName,
       technicalRequirements: detectedKeywords.slice(0, 5),
       softSkills: ["Comunicação Clara", "Resolução de Problemas Críticos", "Trabalho em Equipe", "Foco em SLA e Qualidade"],
       atsKeywords: detectedKeywords,
@@ -199,41 +389,7 @@ Retorne OBRIGATORIAMENTE um JSON estritamente compatível com o seguinte formato
       gaps: text.includes("linux") ? ["Linux Avançado"] : ["Sem lacunas impeditivas para a função"],
       recommendedHighlight:
         "Destacar a atuação sólida na Brasfort e Truly Informática com administração de Microsoft 365, Active Directory, fluxos na Neppo e certificações AZ-900 e ITIL 4.",
-      interviewPrep: {
-        salaryExpectationGuide: {
-          suggestedCLT: isN3 ? "R$ 5.000 a R$ 6.800" : "R$ 4.200 a R$ 5.500",
-          suggestedPJ: isN3 ? "R$ 7.500 a R$ 9.500" : "R$ 6.000 a R$ 7.800",
-          justification:
-            "Compatível com o mercado para Suporte N2/N3 com certificação AZ-900, ITIL 4 Foundation e pós-graduação em IA em andamento.",
-        },
-        motivationResponse: `Minha motivação para essa vaga decorre da forte sinergia entre os desafios técnicos da ${params.companyName || "empresa"} e minha vivência sólida em sustentação de ambientes de missão crítica, administração de Microsoft 365 e Active Directory. Busco contribuir diretamente para a estabilidade das operações e a evolução dos processos de suporte.`,
-        commonQuestions: [
-          {
-            question: "Informe a sua pretensão salarial (Fixo/CLT) ou o que motivou a se candidatar para essa vaga.",
-            suggestedAnswer: `Minha pretensão salarial atual para regime CLT situa-se entre ${isN3 ? "R$ 5.000 e R$ 6.800" : "R$ 4.200 e R$ 5.500"}, flexível em função do pacote de benefícios corporativos. O que me motivou a me candidatar é a oportunidade de aplicar minha expertise técnica em suporte avançado e administração de nuvem Azure/M365 nos desafios da ${params.companyName || "empresa"}.`,
-            keyPointsToHighlight: [
-              "Senioridade técnica N2/N3 comprovada",
-              "Certificações ITIL 4 e AZ-900",
-              "Sólida atuação com SLAs rigorosos e automação",
-            ],
-          },
-          {
-            question: "Como você lida com incidentes críticos de indisponibilidade de serviços sob pressão de tempo?",
-            suggestedAnswer:
-              "Priorizo a contenção imediata e a comunicação transparente com os usuários e líderes conforme os padrões ITIL. Mantenho a calma técnica, analiso logs e acessos, e após a normalização do serviço documento a análise de causa-raiz para evitar recorrência.",
-            keyPointsToHighlight: [
-              "Metodologia ITIL 4",
-              "Gestão de incidentes críticos P1/P2",
-              "Documentação e melhoria contínua",
-            ],
-          },
-        ],
-        preparationTips: [
-          "Destaque casos reais de resolução de incidentes e migração de contas M365.",
-          "Demonstre segurança nos conceitos de Active Directory, GPOs e permissões de segurança.",
-          "Enfatize a certificação AZ-900 e a Pós-Graduação em Inteligência Artificial como diferencial de adaptabilidade técnica.",
-        ],
-      },
+      interviewDossier,
       suggestedCoverLetter: `Prezado(a) Recrutador(a),\n\nIdentifiquei grande aderência entre os desafios da oportunidade de ${roleName} na ${compName} e minha trajetória profissional. Atuo na sustentação e suporte técnico corporativo avançado, com experiência prática na administração do ecossistema Microsoft 365, Active Directory, automação de fluxos e resolução de incidentes críticos com cumprimento rigoroso de SLAs e governança ITIL 4.\n\nPossuo certificações Microsoft Azure Fundamentals (AZ-900) e ITIL 4 Foundation, graduação em ADS e pós-graduação em Inteligência Artificial em andamento. Compartilho em anexo meu currículo profissional detalhado e fico à disposição para conversarmos!\n\nAtenciosamente,\nRenato de França Lima\n(61) 9935-3163 | rfranca.lima@outlook.com`,
     };
   },
