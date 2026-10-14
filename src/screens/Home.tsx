@@ -31,6 +31,9 @@ const EmailSenderModal = lazy(() =>
 const JobPortalsView = lazy(() =>
   import("../presentation/components/JobPortalsView").then((m) => ({ default: m.JobPortalsView }))
 );
+const NewSkillView = lazy(() =>
+  import("../presentation/components/NewSkillView").then((m) => ({ default: m.NewSkillView }))
+);
 
 const TabLoader: React.FC = () => (
   <div
@@ -56,7 +59,7 @@ export const Home: React.FC = () => {
   const [masterResume, setMasterResume] = useState<ResumeData>(MASTER_PROFILE);
   const [previewResume, setPreviewResume] = useState<ResumeData>(MASTER_PROFILE);
   const [activeResumeTitle, setActiveResumeTitle] = useState<string>("Currículo Base Oficial (N2/N3)");
-  const [currentTab, setCurrentTab] = useState<"preview" | "edit" | "analyze" | "kanban" | "metrics" | "email" | "portals">("preview");
+  const [currentTab, setCurrentTab] = useState<"preview" | "edit" | "analyze" | "kanban" | "metrics" | "email" | "portals" | "skill">("preview");
   const [applications, setApplications] = useState<ApplicationItem[]>([]);
   const [selectedAppForEmail, setSelectedAppForEmail] = useState<ApplicationItem | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -224,6 +227,33 @@ export const Home: React.FC = () => {
     setCurrentTab("email");
   };
 
+  const handleSaveNewSkill = async (updated: ResumeData, skillTitle: string) => {
+    if (!user?.id) {
+      setMasterResume(updated);
+      setPreviewResume(updated);
+      showInfo(`Habilidade "${skillTitle}" salva no estado local.`, "Habilidade Adicionada");
+      return;
+    }
+
+    try {
+      await MasterProfileRepository.saveProfile(user.id, updated);
+      setMasterResume(updated);
+      setPreviewResume(updated);
+      showSuccess(
+        `"${skillTitle}" sincronizada na Base da Verdade e no Currículo Base Oficial!`,
+        "Base da Verdade Sincronizada"
+      );
+    } catch (err) {
+      console.warn("[Home] Falha ao sincronizar nova habilidade no Supabase:", err);
+      setMasterResume(updated);
+      setPreviewResume(updated);
+      showWarning(
+        `Habilidade salva no estado local da aplicação.`,
+        "Sincronização Local"
+      );
+    }
+  };
+
   return (
     <WorkspaceLayout
       currentTab={currentTab}
@@ -269,6 +299,12 @@ export const Home: React.FC = () => {
             data={masterResume}
             onSave={handleSaveProfile}
             isSaving={isSaving}
+          />
+        ) : currentTab === "skill" ? (
+          <NewSkillView
+            masterProfile={masterResume}
+            onSaveSkill={handleSaveNewSkill}
+            onGoToPreview={() => setCurrentTab("preview")}
           />
         ) : (
           <ResumeCanvas

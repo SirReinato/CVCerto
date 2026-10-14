@@ -22,6 +22,7 @@ import {
   FileDown,
   GitCompare,
   Globe,
+  GraduationCap,
 } from "lucide-react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import type { ResumeData } from "../../domain/entities/Resume";
@@ -31,8 +32,8 @@ import { useToast } from "../../context/ToastContext";
 import { ResumeDiffModal } from "./ResumeDiffModal";
 
 export interface WorkspaceLayoutProps {
-  currentTab: "preview" | "analyze" | "kanban" | "metrics" | "email" | "edit" | "portals";
-  onTabChange: (tab: "preview" | "analyze" | "kanban" | "metrics" | "email" | "edit" | "portals") => void;
+  currentTab: "preview" | "analyze" | "kanban" | "metrics" | "email" | "edit" | "portals" | "skill";
+  onTabChange: (tab: "preview" | "analyze" | "kanban" | "metrics" | "email" | "edit" | "portals" | "skill") => void;
   userEmail?: string;
   onSignOut: () => void;
   masterResume: ResumeData;
@@ -667,6 +668,13 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         >
           <Edit3 size={15} />
           <span>Editar Perfil Mestre</span>
+        </TabItem>
+        <TabItem
+          $active={currentTab === "skill"}
+          onClick={() => onTabChange("skill")}
+        >
+          <GraduationCap size={15} />
+          <span>Nova Habilidade</span>
         </TabItem>
       </SubHeader>
 
