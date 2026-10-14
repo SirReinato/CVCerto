@@ -11,7 +11,13 @@ interface JobAnalyzerProps {
   onAnalysisComplete?: (analysis: JobAnalysis) => void;
   onGenerateResume?: (
     tailoredResult: TailoredResumeResult,
-    jobDetails?: { jobTitle: string; companyName: string; jobDescription: string; analysis: JobAnalysis }
+    jobDetails?: {
+      jobTitle: string;
+      companyName: string;
+      jobDescription: string;
+      sourceUrl?: string;
+      analysis: JobAnalysis;
+    }
   ) => void;
 }
 
@@ -233,6 +239,7 @@ export const JobAnalyzer: React.FC<JobAnalyzerProps> = ({
 }) => {
   const [jobTitle, setJobTitle] = useState("");
   const [companyName, setCompanyName] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
   const [jobDescription, setJobDescription] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<JobAnalysis | null>(null);
@@ -290,6 +297,15 @@ export const JobAnalyzer: React.FC<JobAnalyzerProps> = ({
             />
           </FormGroup>
         </FieldRow>
+
+        <FormGroup>
+          <label>Link da Vaga / Portal (Opcional - Gupy, LinkedIn, Catho, etc.)</label>
+          <input
+            placeholder="Ex: https://empresa.gupy.io/job/123456 ou link do anúncio..."
+            value={sourceUrl}
+            onChange={(e) => setSourceUrl(e.target.value)}
+          />
+        </FormGroup>
 
         <FormGroup>
           <label>Texto Completo da Vaga *</label>
@@ -464,6 +480,7 @@ export const JobAnalyzer: React.FC<JobAnalyzerProps> = ({
                     jobTitle: jobTitle || analysisResult.jobTitle,
                     companyName: companyName || analysisResult.companyName || "Empresa Confidencial",
                     jobDescription,
+                    sourceUrl: sourceUrl.trim() || undefined,
                     analysis: analysisResult,
                   });
                 }}

@@ -21,6 +21,7 @@ import {
   Copy,
   FileDown,
   GitCompare,
+  Globe,
 } from "lucide-react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import type { ResumeData } from "../../domain/entities/Resume";
@@ -30,8 +31,8 @@ import { useToast } from "../../context/ToastContext";
 import { ResumeDiffModal } from "./ResumeDiffModal";
 
 export interface WorkspaceLayoutProps {
-  currentTab: "preview" | "analyze" | "kanban" | "metrics" | "email" | "edit";
-  onTabChange: (tab: "preview" | "analyze" | "kanban" | "metrics" | "email" | "edit") => void;
+  currentTab: "preview" | "analyze" | "kanban" | "metrics" | "email" | "edit" | "portals";
+  onTabChange: (tab: "preview" | "analyze" | "kanban" | "metrics" | "email" | "edit" | "portals") => void;
   userEmail?: string;
   onSignOut: () => void;
   masterResume: ResumeData;
@@ -638,6 +639,13 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           <Kanban size={15} />
           <span>CRM Candidaturas</span>
           <span className="count-badge">{applicationsCount}</span>
+        </TabItem>
+        <TabItem
+          $active={currentTab === "portals"}
+          onClick={() => onTabChange("portals")}
+        >
+          <Globe size={15} />
+          <span>Portais de Vagas</span>
         </TabItem>
         <TabItem
           $active={currentTab === "metrics"}

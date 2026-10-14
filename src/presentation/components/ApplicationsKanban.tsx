@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import styled from "styled-components";
-import { Building2, Download, Send, Sparkles } from "lucide-react";
+import { Building2, Download, Send, Sparkles, ExternalLink, Globe } from "lucide-react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import type { ApplicationStatus } from "../../shared/types/database.types";
 import type { ApplicationItem } from "../../infrastructure/supabase/JobApplicationsRepository";
@@ -8,6 +8,7 @@ import type { ResumeData } from "../../domain/entities/Resume";
 import { ResumePDFTemplate } from "../templates/ResumePDFTemplate";
 import { InterviewPrepModal } from "./InterviewPrepModal";
 import { useToast } from "../../context/ToastContext";
+import { openSideBrowser } from "../../shared/utils/popupLauncher";
 
 interface ApplicationsKanbanProps {
   applications: ApplicationItem[];
@@ -253,6 +254,55 @@ export const ApplicationsKanban: React.FC<ApplicationsKanbanProps> = ({
                     <Sparkles size={13} />
                     Dicas de Entrevista & Vaga
                   </button>
+
+                  {/* Botão de Navegador Lateral / Portal da Vaga */}
+                  {(() => {
+                    const jobUrl =
+                      (app.jobs as any)?.source_url ||
+                      app.jobs?.raw_description?.match(/https?:\/\/[^\s]+/)?.[0] ||
+                      null;
+
+                    const handleOpenPortal = (e: React.MouseEvent) => {
+                      e.stopPropagation();
+                      const title = `${app.jobs?.title || "Vaga"} (${app.jobs?.companies?.name || "Empresa"})`;
+                      if (jobUrl) {
+                        openSideBrowser(jobUrl, title);
+                        showSuccess(`Abrindo vaga no navegador lateral!`, "Portal de Vagas");
+                      } else {
+                        const query = encodeURIComponent(`${app.jobs?.title || "Vaga"} ${app.jobs?.companies?.name || ""}`);
+                        openSideBrowser(`https://www.google.com/search?q=${query}`, title);
+                        showSuccess("Localizando vaga no navegador lateral...", "Portal de Vagas");
+                      }
+                    };
+
+                    return (
+                      <button
+                        type="button"
+                        onClick={handleOpenPortal}
+                        style={{
+                          width: "100%",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 6,
+                          padding: "5px 10px",
+                          fontSize: "0.74rem",
+                          fontWeight: 600,
+                          backgroundColor: "#f8fafc",
+                          color: "#1e293b",
+                          border: "1px solid #cbd5e1",
+                          borderRadius: 4,
+                          cursor: "pointer",
+                          marginTop: 2,
+                        }}
+                        title="Abrir página da vaga ou portal em mini-browser lateral"
+                      >
+                        <Globe size={13} color="#0284c7" />
+                        <span>{jobUrl ? "Acompanhar no Portal" : "Localizar no Portal"}</span>
+                        <ExternalLink size={11} color="#64748b" />
+                      </button>
+                    );
+                  })()}
 
                   <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
                     <PDFDownloadLink

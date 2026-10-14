@@ -8,6 +8,7 @@ export interface CreateApplicationParams {
   jobTitle: string;
   companyName: string;
   jobDescription: string;
+  sourceUrl?: string;
   analysis?: JobAnalysis;
   salaryMin?: number;
   salaryMax?: number;
@@ -35,6 +36,7 @@ export interface ApplicationItem {
   jobs?: {
     title: string;
     raw_description: string;
+    source_url?: string | null;
     analysis?: any;
     companies?: {
       name: string;
@@ -79,6 +81,7 @@ export const JobApplicationsRepository = {
         user_id: params.userId,
         company_id: companyId,
         title: params.jobTitle,
+        source_url: params.sourceUrl || null,
         raw_description: params.jobDescription,
         analysis: params.analysis as any,
       } as any)
@@ -117,7 +120,7 @@ export const JobApplicationsRepository = {
   async listApplications(userId: string): Promise<ApplicationItem[]> {
     const { data, error } = await supabase
       .from("job_applications")
-      .select("*, jobs(title, raw_description, analysis, companies(name))")
+      .select("*, jobs(title, raw_description, source_url, analysis, companies(name))")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 

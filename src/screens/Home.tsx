@@ -28,6 +28,9 @@ const DashboardMetrics = lazy(() =>
 const EmailSenderModal = lazy(() =>
   import("../presentation/components/EmailSenderModal").then((m) => ({ default: m.EmailSenderModal }))
 );
+const JobPortalsView = lazy(() =>
+  import("../presentation/components/JobPortalsView").then((m) => ({ default: m.JobPortalsView }))
+);
 
 const TabLoader: React.FC = () => (
   <div
@@ -53,7 +56,7 @@ export const Home: React.FC = () => {
   const [masterResume, setMasterResume] = useState<ResumeData>(MASTER_PROFILE);
   const [previewResume, setPreviewResume] = useState<ResumeData>(MASTER_PROFILE);
   const [activeResumeTitle, setActiveResumeTitle] = useState<string>("Currículo Base Oficial (N2/N3)");
-  const [currentTab, setCurrentTab] = useState<"preview" | "edit" | "analyze" | "kanban" | "metrics" | "email">("preview");
+  const [currentTab, setCurrentTab] = useState<"preview" | "edit" | "analyze" | "kanban" | "metrics" | "email" | "portals">("preview");
   const [applications, setApplications] = useState<ApplicationItem[]>([]);
   const [selectedAppForEmail, setSelectedAppForEmail] = useState<ApplicationItem | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -104,7 +107,13 @@ export const Home: React.FC = () => {
 
   const handleGenerateTailored = async (
     tailoredResult: TailoredResumeResult,
-    jobDetails?: { jobTitle: string; companyName: string; jobDescription: string; analysis: any }
+    jobDetails?: {
+      jobTitle: string;
+      companyName: string;
+      jobDescription: string;
+      sourceUrl?: string;
+      analysis: any;
+    }
   ) => {
     if (!tailoredResult.validationReport.isValid) {
       showError(
@@ -138,6 +147,7 @@ export const Home: React.FC = () => {
       jobs: {
         title: jobDetails?.jobTitle || "Analista de Suporte N2/N3",
         raw_description: jobDetails?.jobDescription || "",
+        source_url: jobDetails?.sourceUrl || null,
         analysis: jobDetails?.analysis || null,
         companies: {
           name: jobDetails?.companyName || "Empresa Cadastrada",
@@ -161,6 +171,7 @@ export const Home: React.FC = () => {
           jobTitle: jobDetails?.jobTitle || "Analista de Suporte N2/N3",
           companyName: jobDetails?.companyName || "Empresa Cadastrada",
           jobDescription: jobDetails?.jobDescription || tailoredResult.atsOptimizationSummary,
+          sourceUrl: jobDetails?.sourceUrl,
           analysis: jobDetails?.analysis,
         });
 
@@ -235,6 +246,8 @@ export const Home: React.FC = () => {
             onStatusChange={handleStatusChange}
             onSendEmail={handleOpenEmailWithApp}
           />
+        ) : currentTab === "portals" ? (
+          <JobPortalsView applications={applications} />
         ) : currentTab === "metrics" ? (
           <DashboardMetrics applications={applications} />
         ) : currentTab === "email" ? (
