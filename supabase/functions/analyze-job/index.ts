@@ -187,37 +187,54 @@ Retorne OBRIGATORIAMENTE um JSON estritamente válido seguindo este formato exat
 `;
 
     // Chamada à API do Gemini
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.2,
-          },
-        }),
-      }
-    );
+    const modelsToTry = ["gemini-3.5-flash-lite", "gemini-flash-lite-latest"];
+    let analysisResult = null;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      return new Response(JSON.stringify({ error: `Erro na API Gemini: ${errorText}` }), {
+    for (const model of modelsToTry) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                responseMimeType: "application/json",
+                temperature: 0.2,
+              },
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          continue;
+        }
+
+        const geminiData = await response.json();
+        let text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) continue;
+
+        text = text.trim();
+        if (text.startsWith("```json")) {
+          text = text.replace(/^```json\s*/i, "").replace(/```\s*$/, "");
+        } else if (text.startsWith("```")) {
+          text = text.replace(/^```\s*/, "").replace(/```\s*$/, "");
+        }
+
+        analysisResult = JSON.parse(text);
+        break;
+      } catch (_e) {
+        // Tenta o próximo modelo
+      }
+    }
+
+    if (!analysisResult) {
+      return new Response(JSON.stringify({ error: "Falha na geração via Gemini API." }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const geminiData = await response.json();
-    const generatedText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!generatedText) {
-      throw new Error("Resposta da IA vazia.");
-    }
-
-    const analysisResult = JSON.parse(generatedText);
 
     return new Response(JSON.stringify(analysisResult), {
       status: 200,

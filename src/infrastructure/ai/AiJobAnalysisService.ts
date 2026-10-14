@@ -198,38 +198,55 @@ Retorne OBRIGATORIAMENTE um JSON estritamente válido seguindo este formato exat
 }
 `;
 
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              responseMimeType: "application/json",
-              temperature: 0.2,
-            },
-          }),
+    const modelsToTry = ["gemini-3.5-flash-lite", "gemini-flash-lite-latest"];
+
+    for (const model of modelsToTry) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                responseMimeType: "application/json",
+                temperature: 0.2,
+              },
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const errBody = await response.text();
+          console.warn(`[AiJobAnalysisService] Modelo ${model} retornou status ${response.status}:`, errBody);
+          continue; // Tenta o próximo modelo
         }
-      );
 
-      if (!response.ok) {
-        throw new Error(`Erro na API Gemini: ${response.statusText}`);
+        const geminiData = await response.json();
+        let text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) continue;
+
+        // Limpeza preventiva de blocos markdown se o modelo envolver em ```json
+        text = text.trim();
+        if (text.startsWith("```json")) {
+          text = text.replace(/^```json\s*/i, "").replace(/```\s*$/, "");
+        } else if (text.startsWith("```")) {
+          text = text.replace(/^```\s*/, "").replace(/```\s*$/, "");
+        }
+
+        const parsed = JSON.parse(text) as JobAnalysis;
+        console.log(`[AiJobAnalysisService] Vaga analisada com sucesso via ${model}!`);
+        return parsed;
+      } catch (err) {
+        console.warn(`[AiJobAnalysisService] Falha ao tentar modelo ${model}:`, err);
       }
-
-      const geminiData = await response.json();
-      const text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!text) throw new Error("Resposta da IA vazia.");
-
-      return JSON.parse(text) as JobAnalysis;
-    } catch (err) {
-      console.warn(
-        "[AiJobAnalysisService] Chamada direta ao Gemini falhou. Utilizando fallback determinístico:",
-        err
-      );
-      return this.fallbackLocalAnalysis(params);
     }
+
+    console.warn(
+      "[AiJobAnalysisService] Todos os modelos Gemini online falharam. Utilizando fallback determinístico estruturado."
+    );
+    return this.fallbackLocalAnalysis(params);
   },
 
   /**
