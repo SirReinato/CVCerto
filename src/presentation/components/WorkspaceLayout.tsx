@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import type { ResumeData } from "../../domain/entities/Resume";
-import { ResumePDFTemplate } from "../templates/ResumePDFTemplate";
+import { ResumePDFTemplate, type ResumeTemplateType } from "../templates/ResumePDFTemplate";
 import { AtsTextFormatter } from "../../domain/services/AtsTextFormatter";
 import { useToast } from "../../context/ToastContext";
 import { ResumeDiffModal } from "./ResumeDiffModal";
@@ -39,6 +39,8 @@ export interface WorkspaceLayoutProps {
   masterResume: ResumeData;
   activeResume: ResumeData;
   activeResumeTitle: string;
+  template?: ResumeTemplateType;
+  onTemplateChange?: (template: ResumeTemplateType) => void;
   onRestoreBase?: () => void;
   applicationsCount: number;
   visibleSections: {
@@ -383,6 +385,8 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   masterResume,
   activeResume,
   activeResumeTitle,
+  template = "geometric",
+  onTemplateChange,
   onRestoreBase,
   applicationsCount,
   visibleSections,
@@ -440,7 +444,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           <div style={{ position: "relative" }}>
             <div style={{ display: "flex", gap: 2 }}>
               <PDFDownloadLink
-                document={<ResumePDFTemplate data={activeResume} />}
+                document={<ResumePDFTemplate data={activeResume} template={template} />}
                 fileName="cv-renato-de-franca-lima.pdf"
                 style={{ textDecoration: "none" }}
               >
@@ -734,6 +738,80 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
                 </div>
               )}
             </InspectorCard>
+
+            {onTemplateChange && (
+              <InspectorCard>
+                <h3>
+                  <Layers size={15} color="#0f172a" />
+                  Template Visual A4 ATS
+                </h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}>
+                  <button
+                    type="button"
+                    onClick={() => onTemplateChange("geometric")}
+                    style={{
+                      padding: "7px 10px",
+                      borderRadius: 6,
+                      fontSize: "0.76rem",
+                      fontWeight: template === "geometric" ? 700 : 500,
+                      background: template === "geometric" ? "#0f172a" : "#f8fafc",
+                      color: template === "geometric" ? "#ffffff" : "#334155",
+                      border: template === "geometric" ? "1px solid #0f172a" : "1px solid #e2e8f0",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    <span>⬛</span> Clássico Geométrico Oficial
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onTemplateChange("moderno")}
+                    style={{
+                      padding: "7px 10px",
+                      borderRadius: 6,
+                      fontSize: "0.76rem",
+                      fontWeight: template === "moderno" ? 700 : 500,
+                      background: template === "moderno" ? "#2563eb" : "#f8fafc",
+                      color: template === "moderno" ? "#ffffff" : "#334155",
+                      border: template === "moderno" ? "1px solid #2563eb" : "1px solid #e2e8f0",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    <span>🔷</span> Modern Tech Blue ATS
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onTemplateChange("minimalista")}
+                    style={{
+                      padding: "7px 10px",
+                      borderRadius: 6,
+                      fontSize: "0.76rem",
+                      fontWeight: template === "minimalista" ? 700 : 500,
+                      background: template === "minimalista" ? "#475569" : "#f8fafc",
+                      color: template === "minimalista" ? "#ffffff" : "#334155",
+                      border: template === "minimalista" ? "1px solid #475569" : "1px solid #e2e8f0",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    <span>📄</span> Clean Minimalista (Alto Parsing)
+                  </button>
+                </div>
+              </InspectorCard>
+            )}
 
             <InspectorCard>
               <h3>

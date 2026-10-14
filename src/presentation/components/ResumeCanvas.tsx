@@ -2,9 +2,12 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import { ZoomIn, ZoomOut, Maximize2, RotateCcw, ChevronLeft, ChevronRight, FileText } from "lucide-react";
 import type { ResumeData } from "../../domain/entities/Resume";
+import type { ResumeTemplateType } from "../templates/ResumePDFTemplate";
 
 interface ResumeCanvasProps {
   data: ResumeData;
+  template?: ResumeTemplateType;
+  onTemplateChange?: (template: ResumeTemplateType) => void;
   visibleSections?: {
     summary?: boolean;
     experiences?: boolean;
@@ -104,6 +107,34 @@ const PageIndicator = styled.div`
   font-weight: 600;
   color: #555555;
   padding: 0 4px;
+`;
+
+const TemplateButtonGroup = styled.div`
+  display: flex;
+  align-items: center;
+  background: #f1f3f7;
+  border-radius: 20px;
+  padding: 2px;
+  gap: 2px;
+  margin-left: 6px;
+`;
+
+const TemplateOption = styled.button<{ $active: boolean }>`
+  border: none;
+  background: ${(props) => (props.$active ? "#ffffff" : "transparent")};
+  color: ${(props) => (props.$active ? "#0f172a" : "#64748b")};
+  font-weight: ${(props) => (props.$active ? "700" : "500")};
+  font-size: 0.73rem;
+  padding: 4px 10px;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: ${(props) => (props.$active ? "0 1px 3px rgba(0,0,0,0.12)" : "none")};
+  transition: all 0.15s ease;
+  white-space: nowrap;
+
+  &:hover {
+    color: #0f172a;
+  }
 `;
 
 const SheetsStack = styled.div<{ $scale: number }>`
@@ -300,9 +331,18 @@ const ContactInfo = styled.div`
   letter-spacing: 0.3px;
 `;
 
-const SectionDivider = styled.hr`
+const SectionDivider = styled.hr<{ $template?: ResumeTemplateType }>`
   border: 0;
-  border-bottom: 1.5px solid #1e1e1e;
+  border-bottom: ${(props) => {
+    switch (props.$template) {
+      case "moderno":
+        return "1.5px solid #2563eb";
+      case "minimalista":
+        return "1px solid #cbd5e1";
+      default:
+        return "1.5px solid #1e1e1e";
+    }
+  }};
   margin: 8px 0 12px 0;
 `;
 
@@ -310,11 +350,24 @@ const Section = styled.section`
   margin-bottom: 12px;
 `;
 
-const SectionTitle = styled.h2`
+const SectionTitle = styled.h2<{ $template?: ResumeTemplateType }>`
   font-size: 0.85rem;
-  letter-spacing: 1.2px;
+  letter-spacing: ${(props) => (props.$template === "minimalista" ? "2px" : "1.2px")};
   font-weight: 700;
-  color: #111111;
+  color: ${(props) => {
+    switch (props.$template) {
+      case "moderno":
+        return "#1e3a8a";
+      case "minimalista":
+        return "#0f172a";
+      default:
+        return "#111111";
+    }
+  }};
+  ${(props) =>
+    props.$template === "moderno"
+      ? "border-bottom: 1px solid #dbeafe; padding-bottom: 2px;"
+      : ""}
   text-transform: uppercase;
   margin: 0 0 5px 0;
 `;
@@ -418,6 +471,8 @@ const ProjectItem = styled.div`
 
 export const ResumeCanvas: React.FC<ResumeCanvasProps> = ({
   data,
+  template = "geometric",
+  onTemplateChange,
   visibleSections = {
     summary: true,
     experiences: true,
@@ -428,6 +483,14 @@ export const ResumeCanvas: React.FC<ResumeCanvasProps> = ({
     languages: true,
   },
 }) => {
+  const [internalTemplate, setInternalTemplate] = useState<ResumeTemplateType>(template);
+  const currentTemplate = template || internalTemplate;
+
+  const handleSelectTemplate = (t: ResumeTemplateType) => {
+    setInternalTemplate(t);
+    if (onTemplateChange) onTemplateChange(t);
+  };
+
   const [scale, setScale] = useState<number>(0.92);
   const [activePageIndex, setActivePageIndex] = useState<number>(1);
 
@@ -475,19 +538,62 @@ export const ResumeCanvas: React.FC<ResumeCanvasProps> = ({
         >
           <ChevronRight size={16} />
         </ToolButton>
+
+        <Divider />
+
+        <TemplateButtonGroup>
+          <TemplateOption
+            type="button"
+            $active={currentTemplate === "geometric"}
+            onClick={() => handleSelectTemplate("geometric")}
+            title="Design Geométrico Oficial (Padrão Clássico Corporativo)"
+          >
+            ⬛ Clássico
+          </TemplateOption>
+          <TemplateOption
+            type="button"
+            $active={currentTemplate === "moderno"}
+            onClick={() => handleSelectTemplate("moderno")}
+            title="Design Modern Tech (Navy Blue ATS)"
+          >
+            🔷 Modern Tech
+          </TemplateOption>
+          <TemplateOption
+            type="button"
+            $active={currentTemplate === "minimalista"}
+            onClick={() => handleSelectTemplate("minimalista")}
+            title="Design Clean ATS (Minimalista Puro de Alto Parsing)"
+          >
+            📄 Minimalista
+          </TemplateOption>
+        </TemplateButtonGroup>
       </FloatingToolbar>
 
       <SheetsStack $scale={scale}>
         {/* PÁGINA 1 */}
         <PageSheet id="resume-page-1">
           <PageBadge>Página 1 de 2 • Padrão A4 Oficial</PageBadge>
-          <TopDecoration>
-            <div className="grey-bar" />
-            <div className="black-block-1" />
-            <div className="black-block-2" />
-            <div className="black-block-3" />
-            <div className="black-block-4" />
-          </TopDecoration>
+
+          {/* Topo por Template */}
+          {currentTemplate === "geometric" && (
+            <TopDecoration>
+              <div className="grey-bar" />
+              <div className="black-block-1" />
+              <div className="black-block-2" />
+              <div className="black-block-3" />
+              <div className="black-block-4" />
+            </TopDecoration>
+          )}
+
+          {currentTemplate === "moderno" && (
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 26, backgroundColor: "#0f172a" }}>
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 3, backgroundColor: "#2563eb" }} />
+            </div>
+          )}
+
+          {currentTemplate === "minimalista" && (
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, backgroundColor: "#e2e8f0" }} />
+          )}
 
           <ResumeHeader>
             <FullName>{data.personalInfo.fullName}</FullName>
@@ -495,13 +601,13 @@ export const ResumeCanvas: React.FC<ResumeCanvasProps> = ({
             <ContactInfo>
               SAMAMBAIA, DF. | (61) 9935-3163 | RFRANCA.LIMA@OUTLOOK.COM | 28 ANOS
             </ContactInfo>
-            <SectionDivider />
+            <SectionDivider $template={currentTemplate} />
           </ResumeHeader>
 
           {/* Resumo Profissional */}
           {visibleSections.summary !== false && (
             <Section>
-              <SectionTitle>RESUMO PROFISSIONAL</SectionTitle>
+              <SectionTitle $template={currentTemplate}>RESUMO PROFISSIONAL</SectionTitle>
               <SummaryText>{data.summary}</SummaryText>
             </Section>
           )}
@@ -509,7 +615,7 @@ export const ResumeCanvas: React.FC<ResumeCanvasProps> = ({
           {/* Experiências Profissionais (Página 1 acomoda perfeitamente Brasfort e Truly) */}
           {visibleSections.experiences !== false && data.experiences.length > 0 && (
             <Section>
-              <SectionTitle>EXPERIÊNCIAS PROFISSIONAIS</SectionTitle>
+              <SectionTitle $template={currentTemplate}>EXPERIÊNCIAS PROFISSIONAIS</SectionTitle>
               {data.experiences.slice(0, 2).map((exp) => (
                 <JobItem key={exp.id}>
                   <h3>
@@ -525,24 +631,56 @@ export const ResumeCanvas: React.FC<ResumeCanvasProps> = ({
             </Section>
           )}
 
-          <BottomDecoration>
-            <div className="black-bar" />
-            <div className="grey-block-1" />
-            <div className="grey-block-2" />
-            <div className="grey-block-3" />
-          </BottomDecoration>
+          {/* Rodapé por Template */}
+          {currentTemplate === "geometric" && (
+            <BottomDecoration>
+              <div className="black-bar" />
+              <div className="grey-block-1" />
+              <div className="grey-block-2" />
+              <div className="grey-block-3" />
+            </BottomDecoration>
+          )}
+
+          {currentTemplate === "moderno" && (
+            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 20, backgroundColor: "#0f172a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, backgroundColor: "#2563eb" }} />
+              <span style={{ fontSize: "0.68rem", color: "#94a3b8" }}>
+                Renato de França Lima • Currículo Profissional N2/N3 • Padrão A4 Oficial
+              </span>
+            </div>
+          )}
+
+          {currentTemplate === "minimalista" && (
+            <div style={{ position: "absolute", bottom: 12, left: 0, right: 0, textAlign: "center" }}>
+              <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>Página 1 / 2</span>
+            </div>
+          )}
         </PageSheet>
 
         {/* PÁGINA 2 */}
         <PageSheet id="resume-page-2">
           <PageBadge>Página 2 de 2 • Padrão A4 Oficial</PageBadge>
-          <TopDecoration>
-            <div className="grey-bar" />
-            <div className="black-block-1" />
-            <div className="black-block-2" />
-            <div className="black-block-3" />
-            <div className="black-block-4" />
-          </TopDecoration>
+
+          {/* Topo por Template */}
+          {currentTemplate === "geometric" && (
+            <TopDecoration>
+              <div className="grey-bar" />
+              <div className="black-block-1" />
+              <div className="black-block-2" />
+              <div className="black-block-3" />
+              <div className="black-block-4" />
+            </TopDecoration>
+          )}
+
+          {currentTemplate === "moderno" && (
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 26, backgroundColor: "#0f172a" }}>
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 3, backgroundColor: "#2563eb" }} />
+            </div>
+          )}
+
+          {currentTemplate === "minimalista" && (
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, backgroundColor: "#e2e8f0" }} />
+          )}
 
           {/* Continuação das Experiências: Forças Armadas */}
           {visibleSections.experiences !== false && data.experiences.length > 2 && (
@@ -563,7 +701,7 @@ export const ResumeCanvas: React.FC<ResumeCanvasProps> = ({
           {/* Formação Acadêmica */}
           {visibleSections.education !== false && data.education.length > 0 && (
             <Section>
-              <SectionTitle>FORMAÇÃO ACADÊMICA</SectionTitle>
+              <SectionTitle $template={currentTemplate}>FORMAÇÃO ACADÊMICA</SectionTitle>
               {data.education.map((edu) => (
                 <EducationItem key={edu.id}>
                   <div className="degree">
@@ -578,7 +716,7 @@ export const ResumeCanvas: React.FC<ResumeCanvasProps> = ({
           {/* Certificações */}
           {visibleSections.certifications !== false && data.certifications.length > 0 && (
             <Section>
-              <SectionTitle>CERTIFICAÇÕES</SectionTitle>
+              <SectionTitle $template={currentTemplate}>CERTIFICAÇÕES</SectionTitle>
               <JobItem>
                 <ul>
                   {data.certifications
@@ -613,7 +751,7 @@ export const ResumeCanvas: React.FC<ResumeCanvasProps> = ({
           {/* Conhecimentos Técnicos e Operacionais */}
           {visibleSections.skills !== false && data.skills.length > 0 && (
             <Section>
-              <SectionTitle>CONHECIMENTOS TÉCNICOS E OPERACIONAIS</SectionTitle>
+              <SectionTitle $template={currentTemplate}>CONHECIMENTOS TÉCNICOS E OPERACIONAIS</SectionTitle>
               {data.skills.map((cat) => (
                 <div key={cat.id} style={{ marginBottom: 6 }}>
                   <SubCategoryTitle>{cat.categoryName}</SubCategoryTitle>
@@ -632,7 +770,7 @@ export const ResumeCanvas: React.FC<ResumeCanvasProps> = ({
           {/* Projetos e Portfólio */}
           {visibleSections.projects !== false && data.projects && data.projects.length > 0 && (
             <Section>
-              <SectionTitle>PROJETOS E PORTFÓLIO</SectionTitle>
+              <SectionTitle $template={currentTemplate}>PROJETOS E PORTFÓLIO</SectionTitle>
               {data.projects.map((proj) => {
                 const desc = proj.description.trim().startsWith("-")
                   ? proj.description.trim().substring(1).trim()
@@ -668,19 +806,37 @@ export const ResumeCanvas: React.FC<ResumeCanvasProps> = ({
           {/* Idiomas */}
           {visibleSections.languages !== false && data.languages && data.languages.length > 0 && (
             <Section>
-              <SectionTitle>IDIOMAS</SectionTitle>
+              <SectionTitle $template={currentTemplate}>IDIOMAS</SectionTitle>
               <p style={{ fontSize: "0.78rem", margin: 0, paddingLeft: 6 }}>
                 {data.languages.join(" | ")}
               </p>
             </Section>
           )}
 
-          <BottomDecoration>
-            <div className="black-bar" />
-            <div className="grey-block-1" />
-            <div className="grey-block-2" />
-            <div className="grey-block-3" />
-          </BottomDecoration>
+          {/* Rodapé por Template */}
+          {currentTemplate === "geometric" && (
+            <BottomDecoration>
+              <div className="black-bar" />
+              <div className="grey-block-1" />
+              <div className="grey-block-2" />
+              <div className="grey-block-3" />
+            </BottomDecoration>
+          )}
+
+          {currentTemplate === "moderno" && (
+            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 20, backgroundColor: "#0f172a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, backgroundColor: "#2563eb" }} />
+              <span style={{ fontSize: "0.68rem", color: "#94a3b8" }}>
+                Renato de França Lima • Currículo Profissional N2/N3 • Padrão A4 Oficial
+              </span>
+            </div>
+          )}
+
+          {currentTemplate === "minimalista" && (
+            <div style={{ position: "absolute", bottom: 12, left: 0, right: 0, textAlign: "center" }}>
+              <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>Página 2 / 2</span>
+            </div>
+          )}
         </PageSheet>
       </SheetsStack>
     </CanvasViewport>

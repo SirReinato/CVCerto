@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useToast } from "../context/ToastContext";
 
 interface BeforeInstallPromptEvent extends Event {
     prompt: () => Promise<void>;
@@ -16,6 +17,7 @@ function isStandalone(): boolean {
 }
 
 export default function InstallAppButton() {
+    const { showInfo } = useToast();
     const [deferredPrompt, setDeferredPrompt] =
         useState<BeforeInstallPromptEvent | null>(null);
 
@@ -43,9 +45,9 @@ export default function InstallAppButton() {
 
     const install = async () => {
         if (!deferredPrompt) {
-            alert(
-                "Abra o menu do navegador e escolha Instalar Aplicativo.\n\n" +
-                "No iPhone/iPad (Safari): Compartilhar → Adicionar à Tela de Início."
+            showInfo(
+                "Abra o menu do navegador e escolha 'Instalar Aplicativo'. No iOS (Safari): toque em Compartilhar e 'Adicionar à Tela de Início'.",
+                "Instalação do PWA"
             );
             return;
         }

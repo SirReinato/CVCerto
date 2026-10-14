@@ -410,4 +410,137 @@ Retorne OBRIGATORIAMENTE um JSON estritamente válido seguindo este formato exat
       suggestedCoverLetter: `Prezado(a) Recrutador(a),\n\nIdentifiquei grande aderência entre os desafios da oportunidade de ${roleName} na ${compName} e minha trajetória profissional. Atuo na sustentação e suporte técnico corporativo avançado, com experiência prática na administração do ecossistema Microsoft 365, Active Directory, automação de fluxos e resolução de incidentes críticos com cumprimento rigoroso de SLAs e governança ITIL 4.\n\nPossuo certificações Microsoft Azure Fundamentals (AZ-900) e ITIL 4 Foundation, graduação em ADS e pós-graduação em Inteligência Artificial em andamento. Compartilho em anexo meu currículo profissional detalhado e fico à disposição para conversarmos!\n\nAtenciosamente,\nRenato de França Lima\n(61) 9935-3163 | rfranca.lima@outlook.com`,
     };
   },
+
+  /**
+   * Avalia a resposta do candidato a uma pergunta da entrevista com IA
+   */
+  async evaluateMockInterviewAnswer(params: {
+    roleTitle: string;
+    companyName: string;
+    question: string;
+    answer: string;
+    idealContext?: string;
+  }): Promise<MockInterviewFeedback> {
+    const apiKey =
+      import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      return this.fallbackEvaluateAnswer(params.answer, params.question);
+    }
+
+    const prompt = `
+Você é um Tech Recruiter e Gestor de Engenharia Sênior especializado em simulação de entrevistas de emprego.
+Analise a resposta dada pelo candidato para a seguinte pergunta de entrevista referente à vaga:
+Cargo: ${params.roleTitle}
+Empresa: ${params.companyName}
+Pergunta da Entrevista: "${params.question}"
+${params.idealContext ? `Contexto/Gabarito esperado: "${params.idealContext}"` : ""}
+
+Resposta formulada pelo candidato:
+"""
+${params.answer}
+"""
+
+Avalie a resposta sob os critérios:
+1. Clareza, concisão e vocabulário técnico de especialista.
+2. Aplicação de método estruturado (ex: STAR - Situação, Tarefa, Ação, Resultado, ou lógica clara de troubleshooting).
+3. Postura profissional e menção a impacto/SLA/boas práticas.
+
+Retorne EXCLUSIVAMENTE um objeto JSON no formato:
+{
+  "score": 85,
+  "verdict": "Excelente",
+  "strengths": ["ponto forte 1", "ponto forte 2"],
+  "improvements": ["o que faltou mencionar ou melhorar 1", "sugestão 2"],
+  "seniorRefinement": "Exemplo de como responder essa mesma pergunta como um profissional Sênior refinado, em 1ª pessoa."
+}
+`;
+
+    const modelsToTry = ["gemini-3.5-flash-lite", "gemini-flash-lite-latest"];
+    for (const model of modelsToTry) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                responseMimeType: "application/json",
+                temperature: 0.3,
+              },
+            }),
+          }
+        );
+
+        if (!response.ok) continue;
+
+        const geminiData = await response.json();
+        let text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) continue;
+
+        text = text.trim();
+        if (text.startsWith("```json")) {
+          text = text.replace(/^```json\s*/i, "").replace(/```\s*$/, "");
+        } else if (text.startsWith("```")) {
+          text = text.replace(/^```\s*/, "").replace(/```\s*$/, "");
+        }
+
+        const parsed = JSON.parse(text) as MockInterviewFeedback;
+        return parsed;
+      } catch (e) {
+        console.warn(`[evaluateMockInterviewAnswer] Falha com modelo ${model}:`, e);
+      }
+    }
+
+    return this.fallbackEvaluateAnswer(params.answer, params.question);
+  },
+
+  fallbackEvaluateAnswer(answer: string, _question: string): MockInterviewFeedback {
+    const wordCount = answer.trim().split(/\s+/).length;
+    const lower = answer.toLowerCase();
+
+    let score = 70;
+    const strengths: string[] = [];
+    const improvements: string[] = [];
+
+    if (wordCount >= 30) {
+      score += 10;
+      strengths.push("Bom nível de detalhamento e contexto fornecido.");
+    } else {
+      score -= 15;
+      improvements.push("Resposta muito sucinta. Em entrevistas reais, estruture com mais contexto sobre a sua ação e o resultado.");
+    }
+
+    if (lower.includes("sla") || lower.includes("itil") || lower.includes("processo") || lower.includes("metodologia") || lower.includes("métrica")) {
+      score += 10;
+      strengths.push("Excelente citação de processos, conformidade ou métricas operacionais.");
+    } else {
+      improvements.push("Tente conectar sua resposta com impacto operacional real (ex: cumprimento de SLA, satisfação do usuário ou prevenção de reincidência).");
+    }
+
+    if (lower.includes("equipe") || lower.includes("time") || lower.includes("comunicação") || lower.includes("usuário")) {
+      strengths.push("Demonstrou empatia e foco na comunicação com as partes interessadas.");
+    }
+
+    const finalScore = Math.max(45, Math.min(95, score));
+    const verdict = finalScore >= 80 ? "Excelente" : finalScore >= 60 ? "Bom" : "Precisa Melhorar";
+
+    return {
+      score: finalScore,
+      verdict,
+      strengths: strengths.length > 0 ? strengths : ["Disposição e clareza direta na comunicação."],
+      improvements: improvements.length > 0 ? improvements : ["Mantenha o tom confiante e use exemplos reais de incidentes solucionados com sucesso."],
+      seniorRefinement: `Na minha experiência com cenários dessa complexidade, sempre abordo a questão priorizando estabilidade e método. Primeiro, realizo a contenção imediata e alinho as expectativas com os envolvidos. Em seguida, analiso a causa-raiz para evitar qualquer reincidência, registrando o procedimento na base de conhecimento e seguindo as melhores práticas ITIL.`
+    };
+  }
 };
+
+export interface MockInterviewFeedback {
+  score: number;
+  verdict: "Excelente" | "Bom" | "Precisa Melhorar";
+  strengths: string[];
+  improvements: string[];
+  seniorRefinement: string;
+}

@@ -5,6 +5,7 @@ import type { ResumeData } from "../../domain/entities/Resume";
 import type { JobAnalysis } from "../../domain/entities/JobAnalysis";
 import { AiJobAnalysisService } from "../../infrastructure/ai/AiJobAnalysisService";
 import { ResumeTailoringEngine, type TailoredResumeResult } from "../../domain/rules/ResumeTailoringEngine";
+import { useToast } from "../../context/ToastContext";
 
 interface JobAnalyzerProps {
   masterProfile: ResumeData;
@@ -237,6 +238,7 @@ export const JobAnalyzer: React.FC<JobAnalyzerProps> = ({
   onAnalysisComplete,
   onGenerateResume,
 }) => {
+  const { showError } = useToast();
   const [jobTitle, setJobTitle] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
@@ -260,7 +262,7 @@ export const JobAnalyzer: React.FC<JobAnalyzerProps> = ({
       setAnalysisResult(result);
       if (onAnalysisComplete) onAnalysisComplete(result);
     } catch (err) {
-      alert("Erro ao realizar análise da vaga.");
+      showError("Erro ao realizar análise da vaga. Tente novamente.", "Erro na Análise");
     } finally {
       setIsAnalyzing(false);
     }

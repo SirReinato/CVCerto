@@ -115,7 +115,7 @@ export const JobApplicationsRepository = {
   },
 
   /**
-   * Lista todas as candidaturas do usuário com dados da vaga e empresa
+   * Lista todas as candidaturas do usuário com dados da vaga, empresa e currículo customizado persistido
    */
   async listApplications(userId: string): Promise<ApplicationItem[]> {
     const { data, error } = await supabase
@@ -129,7 +129,27 @@ export const JobApplicationsRepository = {
       return [];
     }
 
-    return (data as unknown as ApplicationItem[]) || [];
+    // Busca versões de currículo salvas para associar ao tailored_resume de cada candidatura
+    const { data: versions } = await supabase
+      .from("resume_versions")
+      .select("application_id, content")
+      .eq("user_id", userId);
+
+    const versionMap = new Map<string, any>();
+    if (versions) {
+      versions.forEach((v: any) => {
+        if (v.application_id && v.content) {
+          versionMap.set(v.application_id, v.content);
+        }
+      });
+    }
+
+    const items = (data as unknown as ApplicationItem[]) || [];
+    return items.map((app) => ({
+      ...app,
+      tailored_resume: versionMap.get(app.id) || app.tailored_resume || null,
+      analysis: app.analysis || (app.jobs as any)?.analysis || null,
+    }));
   },
 
   /**
@@ -144,5 +164,31 @@ export const JobApplicationsRepository = {
 
     if (error) throw error;
     return data;
+  },
+
+  /**
+   * Atualiza anotações, contatos e detalhes da candidatura
+   */
+  async updateNotes(applicationId: string, notes: string) {
+    const { data, error } = await (supabase.from("job_applications") as any)
+      .update({ notes })
+      .eq("id", applicationId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
+   * Remove uma candidatura do CRM
+   */
+  async deleteApplication(applicationId: string): Promise<void> {
+    await supabase.from("resume_versions").delete().eq("application_id", applicationId);
+    const { error } = await supabase.from("job_applications").delete().eq("id", applicationId);
+    if (error) {
+      console.error("[JobApplicationsRepository] Erro ao excluir candidatura:", error);
+      throw error;
+    }
   },
 };

@@ -248,30 +248,79 @@ const styles = StyleSheet.create({
   },
 });
 
+export type ResumeTemplateType = "geometric" | "moderno" | "minimalista";
+
 interface ResumePDFTemplateProps {
   data: ResumeData;
+  template?: ResumeTemplateType;
 }
 
-export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) => {
+export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({
+  data,
+  template = "geometric",
+}) => {
+  const dividerStyle =
+    template === "moderno"
+      ? [styles.horizontalDivider, { borderBottomColor: "#2563EB", borderBottomWidth: 1.5 }]
+      : template === "minimalista"
+      ? [styles.horizontalDivider, { borderBottomColor: "#CBD5E1", borderBottomWidth: 1 }]
+      : styles.horizontalDivider;
+
+  const sectionTitleStyle =
+    template === "moderno"
+      ? [styles.sectionTitle, { color: "#1E3A8A", borderBottomWidth: 1, borderBottomColor: "#DBEAFE", paddingBottom: 2 }]
+      : template === "minimalista"
+      ? [styles.sectionTitle, { color: "#0F172A", letterSpacing: 2 }]
+      : styles.sectionTitle;
+
   return (
     <Document title="cv-renato-de-franca-lima">
       <Page size="A4" style={styles.page}>
-        {/* 1. TOPO GEOMÉTRICO FIXO (Repete em todas as páginas) */}
-        <View style={styles.topDecoration} fixed>
-          <View style={styles.topGreyBar} />
-          <View style={styles.topBlackBlock1} />
-          <View style={styles.topBlackBlock2} />
-          <View style={styles.topBlackBlock3} />
-          <View style={styles.topBlackBlock4} />
-        </View>
+        {/* 1. TOPO FIXO POR TEMPLATE (Repete em todas as páginas) */}
+        {template === "geometric" && (
+          <View style={styles.topDecoration} fixed>
+            <View style={styles.topGreyBar} />
+            <View style={styles.topBlackBlock1} />
+            <View style={styles.topBlackBlock2} />
+            <View style={styles.topBlackBlock3} />
+            <View style={styles.topBlackBlock4} />
+          </View>
+        )}
 
-        {/* 2. RODAPÉ GEOMÉTRICO FIXO (Repete em todas as páginas) */}
-        <View style={styles.bottomDecoration} fixed>
-          <View style={styles.bottomBlackBar} />
-          <View style={styles.bottomGreyBlock1} />
-          <View style={styles.bottomGreyBlock2} />
-          <View style={styles.bottomGreyBlock3} />
-        </View>
+        {template === "moderno" && (
+          <View style={{ position: "absolute", top: 0, left: 0, right: 0, height: 26, backgroundColor: "#0F172A" }} fixed>
+            <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 3, backgroundColor: "#2563EB" }} />
+          </View>
+        )}
+
+        {template === "minimalista" && (
+          <View style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, backgroundColor: "#E2E8F0" }} fixed />
+        )}
+
+        {/* 2. RODAPÉ FIXO POR TEMPLATE (Repete em todas as páginas) */}
+        {template === "geometric" && (
+          <View style={styles.bottomDecoration} fixed>
+            <View style={styles.bottomBlackBar} />
+            <View style={styles.bottomGreyBlock1} />
+            <View style={styles.bottomGreyBlock2} />
+            <View style={styles.bottomGreyBlock3} />
+          </View>
+        )}
+
+        {template === "moderno" && (
+          <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 18, backgroundColor: "#0F172A", justifyContent: "center", alignItems: "center" }} fixed>
+            <View style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, backgroundColor: "#2563EB" }} />
+            <Text style={{ fontSize: 7, color: "#94A3B8" }}>
+              Renato de França Lima • Currículo Profissional N2/N3 • Padrão A4 Oficial
+            </Text>
+          </View>
+        )}
+
+        {template === "minimalista" && (
+          <View style={{ position: "absolute", bottom: 12, left: 0, right: 0, alignItems: "center" }} fixed>
+            <Text style={{ fontSize: 7.5, color: "#94A3B8" }} render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
+          </View>
+        )}
 
         {/* 3. CABEÇALHO */}
         <View style={styles.header}>
@@ -291,11 +340,11 @@ export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) =>
           </Text>
         </View>
 
-        <View style={styles.horizontalDivider} />
+        <View style={dividerStyle} />
 
         {/* 4. RESUMO PROFISSIONAL (Indivisível) */}
         <View wrap={false}>
-          <Text style={styles.sectionTitle}>RESUMO PROFISSIONAL</Text>
+          <Text style={sectionTitleStyle}>RESUMO PROFISSIONAL</Text>
           <Text style={styles.summaryText}>{data.summary}</Text>
         </View>
 
@@ -304,7 +353,7 @@ export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) =>
           <View>
             {/* TÍTULO + PRIMEIRA EXPERIÊNCIA AGRUPADOS COM wrap={false}: IMPOSSÍVEL O TÍTULO FICAR ÓRFÃO! */}
             <View wrap={false}>
-              <Text style={styles.sectionTitle}>EXPERIÊNCIAS PROFISSIONAIS</Text>
+              <Text style={sectionTitleStyle}>EXPERIÊNCIAS PROFISSIONAIS</Text>
               <View style={styles.jobBlock}>
                 <Text style={styles.jobHeader}>
                   {data.experiences[0].role.toUpperCase()} | {data.experiences[0].company} - {data.experiences[0].period}
@@ -338,7 +387,7 @@ export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) =>
         {/* 6. FORMAÇÃO ACADÊMICA (Seção inteira indivisível com wrap={false}: nunca separa título nem curso da instituição) */}
         {data.education.length > 0 && (
           <View wrap={false}>
-            <Text style={styles.sectionTitle}>FORMAÇÃO ACADÊMICA</Text>
+            <Text style={sectionTitleStyle}>FORMAÇÃO ACADÊMICA</Text>
             {data.education.map((edu) => (
               <View key={edu.id} style={styles.educationBlock}>
                 <Text style={styles.educationDegree}>
@@ -355,7 +404,7 @@ export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) =>
           <View>
             {/* Título + Certificações Principais agrupados com wrap={false} */}
             <View wrap={false}>
-              <Text style={styles.sectionTitle}>CERTIFICAÇÕES</Text>
+              <Text style={sectionTitleStyle}>CERTIFICAÇÕES</Text>
               {data.certifications
                 .filter((c) => c.category === "principal")
                 .map((cert) => (
@@ -394,7 +443,7 @@ export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) =>
           <View>
             {/* TÍTULO + PRIMEIRA CATEGORIA AGRUPADOS COM wrap={false}: IMPOSSÍVEL O TÍTULO FICAR ÓRFÃO! */}
             <View wrap={false}>
-              <Text style={styles.sectionTitle}>CONHECIMENTOS TÉCNICOS E OPERACIONAIS</Text>
+              <Text style={sectionTitleStyle}>CONHECIMENTOS TÉCNICOS E OPERACIONAIS</Text>
               <View style={{ marginBottom: 4 }}>
                 <Text style={styles.subCategoryTitle}>{data.skills[0].categoryName}</Text>
                 {data.skills[0].skills.map((skill, sIdx) => (
@@ -426,7 +475,7 @@ export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) =>
           <View>
             {/* TÍTULO + PRIMEIRO PROJETO AGRUPADOS COM wrap={false}: IMPOSSÍVEL O TÍTULO FICAR ÓRFÃO! */}
             <View wrap={false}>
-              <Text style={styles.sectionTitle}>PROJETOS E PORTFÓLIO</Text>
+              <Text style={sectionTitleStyle}>PROJETOS E PORTFÓLIO</Text>
               {(() => {
                 const proj = data.projects[0];
                 const desc = proj.description.trim().startsWith("-")
@@ -487,7 +536,7 @@ export const ResumePDFTemplate: React.FC<ResumePDFTemplateProps> = ({ data }) =>
         {/* 10. IDIOMAS (Indivisível com wrap={false}) */}
         {data.languages && data.languages.length > 0 && (
           <View wrap={false}>
-            <Text style={styles.sectionTitle}>IDIOMAS</Text>
+            <Text style={sectionTitleStyle}>IDIOMAS</Text>
             {data.languages.map((lang, lIdx) => (
               <Text key={lIdx} style={{ fontSize: 9, color: "#222222", paddingLeft: 6 }}>
                 {lang}

@@ -4,6 +4,7 @@ import { Mail, Send, CheckCircle2, Paperclip } from "lucide-react";
 import { OutlookGraphMailService } from "../../infrastructure/mail/OutlookGraphMailService";
 import type { ResumeData } from "../../domain/entities/Resume";
 import type { ApplicationItem } from "../../infrastructure/supabase/JobApplicationsRepository";
+import { useToast } from "../../context/ToastContext";
 
 
 interface EmailSenderModalProps {
@@ -128,6 +129,7 @@ export const EmailSenderModal: React.FC<EmailSenderModalProps> = ({
     return `Prezado(a) Recrutador(a),\n\nIdentifiquei grande aderência entre os desafios da oportunidade de ${role} na ${company} e minha trajetória profissional. Atuo na sustentação e suporte técnico corporativo avançado (N2/N3), com sólida experiência na administração do ecossistema Microsoft 365, Active Directory, automação de fluxos e resolução de incidentes críticos orientados a rigorosos SLAs e práticas ITIL 4.\n\nPossuo certificações Microsoft Azure Fundamentals (AZ-900) e ITIL 4 Foundation, graduação em Análise e Desenvolvimento de Sistemas e pós-graduação em Inteligência Artificial em andamento. Compartilho em anexo meu currículo profissional detalhado e coloco-me à inteira disposição para conversarmos!\n\nAtenciosamente,\n${candidateName}\n(61) 9935-3163 | rfranca.lima@outlook.com`;
   };
 
+  const { showSuccess, showError } = useToast();
   const [toEmail, setToEmail] = useState(defaultEmail || "");
   const [subject, setSubject] = useState(getInitialSubject());
   const [body, setBody] = useState(getInitialBody());
@@ -174,9 +176,10 @@ export const EmailSenderModal: React.FC<EmailSenderModalProps> = ({
       });
 
       setIsSuccess(true);
+      showSuccess("E-mail disparado com sucesso via Outlook Graph!", "E-mail Enviado");
       if (onSent) onSent();
     } catch {
-      alert("Erro ao disparar e-mail via Outlook.");
+      showError("Erro ao disparar e-mail via Outlook Graph. Verifique as credenciais ou tente novamente.", "Erro no Envio");
     } finally {
       setIsSending(false);
     }

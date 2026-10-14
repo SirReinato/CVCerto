@@ -15,9 +15,15 @@ import {
   AlertTriangle,
   ShieldCheck,
   CheckCircle2,
+  Shuffle,
+  Send,
+  RotateCcw,
+  Award,
+  HelpCircle,
 } from "lucide-react";
 import type { ApplicationItem } from "../../infrastructure/supabase/JobApplicationsRepository";
 import type { FullInterviewDossier, JobAnalysis } from "../../domain/entities/JobAnalysis";
+import { AiJobAnalysisService, type MockInterviewFeedback } from "../../infrastructure/ai/AiJobAnalysisService";
 
 interface InterviewPrepModalProps {
   application: ApplicationItem;
@@ -351,9 +357,144 @@ const SabatinaCard = styled.div`
   }
 `;
 
+const SimCard = styled.div`
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+const SimQuestionBox = styled.div`
+  background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+  border: 1px solid #bfdbfe;
+  border-left: 4px solid #2563eb;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #1d4ed8;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .question-text {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.45;
+  }
+`;
+
+const SimTextarea = styled.textarea`
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 140px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1.5px solid #cbd5e1;
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: #1e293b;
+  resize: vertical;
+  outline: none;
+  transition: all 0.2s;
+
+  &:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  }
+
+  &::placeholder {
+    color: #94a3b8;
+  }
+`;
+
+const SimButton = styled.button<{ $variant?: "primary" | "secondary" | "outline" }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+
+  ${(props) => {
+    switch (props.$variant) {
+      case "primary":
+        return `
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+          color: #ffffff;
+          box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+          &:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+          }
+        `;
+      case "secondary":
+        return `
+          background: #f1f5f9;
+          color: #334155;
+          &:hover:not(:disabled) {
+            background: #e2e8f0;
+            color: #0f172a;
+          }
+        `;
+      default:
+        return `
+          background: #ffffff;
+          color: #475569;
+          border: 1px solid #cbd5e1;
+          &:hover:not(:disabled) {
+            background: #f8fafc;
+            color: #0f172a;
+            border-color: #94a3b8;
+          }
+        `;
+    }
+  }}
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+const ScoreBadge = styled.div<{ $score: number }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: ${(props) =>
+    props.$score >= 80 ? "#ecfdf5" : props.$score >= 60 ? "#fffbeb" : "#fef2f2"};
+  color: ${(props) =>
+    props.$score >= 80 ? "#065f46" : props.$score >= 60 ? "#92400e" : "#991b1b"};
+  border: 1px solid
+    ${(props) =>
+      props.$score >= 80 ? "#a7f3d0" : props.$score >= 60 ? "#fde68a" : "#fecaca"};
+`;
+
 export const InterviewPrepModal: React.FC<InterviewPrepModalProps> = ({ application, onClose }) => {
   const [activeTab, setActiveTab] = useState<
-    "diagnostico" | "scripts" | "star" | "sabatina" | "salario_perguntas"
+    "diagnostico" | "scripts" | "star" | "sabatina" | "salario_perguntas" | "simulador"
   >("diagnostico");
 
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -484,6 +625,70 @@ export const InterviewPrepModal: React.FC<InterviewPrepModalProps> = ({ applicat
     teamAutonomyAndGrowth: "Qual é o nível de autonomia do time de sustentação para propor melhorias de processo, automações de rotina e projetos de modernização tecnológica?"
   };
 
+  // Consolidação de perguntas para o Simulador Interativo
+  const allAvailableQuestions = React.useMemo(() => {
+    const list: { category: string; question: string; idealAnswer?: string }[] = [];
+    sabatina.forEach((s) => {
+      list.push({ category: "Sabatina Técnica", question: s.question, idealAnswer: s.idealAnswer });
+    });
+    starQuestions.forEach((st) => {
+      list.push({
+        category: "Comportamental STAR",
+        question: st.question,
+        idealAnswer: `Situação: ${st.situation}\nAção: ${st.action}\nResultado: ${st.result}`
+      });
+    });
+    list.push({
+      category: "Apresentação",
+      question: "Conte um pouco sobre sua trajetória profissional e por que você é o candidato ideal para esta vaga.",
+      idealAnswer: scripts.elevatorPitch
+    });
+    list.push({
+      category: "Resolução de Crise",
+      question: "Como você age se um servidor crítico de autenticação ou serviço de e-mail corporativo cair subitamente?",
+      idealAnswer: "Abro canal de contingência, aciono a equipe de infraestrutura, testo logs de autenticação e priorizo o restabelecimento do serviço dentro do SLA com comunicação preventiva aos usuários."
+    });
+    return list;
+  }, [sabatina, starQuestions, scripts]);
+
+  const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number>(0);
+  const [simAnswer, setSimAnswer] = useState<string>("");
+  const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
+  const [simFeedback, setSimFeedback] = useState<MockInterviewFeedback | null>(null);
+  const [showGoldenTip, setShowGoldenTip] = useState<boolean>(false);
+
+  const currentSimQuestion = allAvailableQuestions[selectedQuestionIndex] || allAvailableQuestions[0];
+
+  const handleShuffleQuestion = () => {
+    if (allAvailableQuestions.length <= 1) return;
+    let nextIdx = Math.floor(Math.random() * allAvailableQuestions.length);
+    if (nextIdx === selectedQuestionIndex) {
+      nextIdx = (selectedQuestionIndex + 1) % allAvailableQuestions.length;
+    }
+    setSelectedQuestionIndex(nextIdx);
+    setSimFeedback(null);
+    setShowGoldenTip(false);
+  };
+
+  const handleEvaluateAnswer = async () => {
+    if (!simAnswer.trim()) return;
+    setIsEvaluating(true);
+    try {
+      const result = await AiJobAnalysisService.evaluateMockInterviewAnswer({
+        roleTitle,
+        companyName,
+        question: currentSimQuestion.question,
+        answer: simAnswer,
+        idealContext: currentSimQuestion.idealAnswer,
+      });
+      setSimFeedback(result);
+    } catch (e) {
+      console.error("Erro ao avaliar mock interview:", e);
+    } finally {
+      setIsEvaluating(false);
+    }
+  };
+
   return (
     <Overlay onClick={onClose}>
       <ModalCard onClick={(e) => e.stopPropagation()}>
@@ -510,7 +715,7 @@ export const InterviewPrepModal: React.FC<InterviewPrepModalProps> = ({ applicat
           </button>
         </ModalHeader>
 
-        {/* Abas de Navegação (5 Tabs) */}
+        {/* Abas de Navegação (6 Tabs) */}
         <TabsNav>
           <TabButton
             $active={activeTab === "diagnostico"}
@@ -546,6 +751,17 @@ export const InterviewPrepModal: React.FC<InterviewPrepModalProps> = ({ applicat
           >
             <DollarSign size={15} />
             Tab 5: Perguntas ao Entrevistador & Salário
+          </TabButton>
+          <TabButton
+            $active={activeTab === "simulador"}
+            onClick={() => setActiveTab("simulador")}
+            style={{
+              color: activeTab === "simulador" ? "#2563eb" : undefined,
+              fontWeight: activeTab === "simulador" ? 700 : undefined
+            }}
+          >
+            <Zap size={15} color={activeTab === "simulador" ? "#2563eb" : "#f59e0b"} />
+            Tab 6: 🎯 Treinar com IA (Mock Interview)
           </TabButton>
         </TabsNav>
 
@@ -898,6 +1114,240 @@ export const InterviewPrepModal: React.FC<InterviewPrepModalProps> = ({ applicat
                 </div>
               </CardBox>
             </>
+          )}
+
+          {/* TAB 6: SIMULADOR INTERATIVO DE ENTREVISTA COM IA */}
+          {activeTab === "simulador" && (
+            <SimCard>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
+                <div>
+                  <SectionTitle style={{ color: "#1d4ed8" }}>
+                    <Zap size={18} color="#2563eb" />
+                    Simulador Interativo de Entrevista com IA
+                  </SectionTitle>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "0.82rem", color: "#64748b" }}>
+                    Treine suas respostas para as perguntas reais desta vaga. A IA analisa sua desenvoltura, aderência técnica e fornece o modelo ideal sênior.
+                  </p>
+                </div>
+
+                <div style={{ display: "flex", gap: 8 }}>
+                  <SimButton
+                    type="button"
+                    $variant="outline"
+                    onClick={handleShuffleQuestion}
+                    title="Sortear outra pergunta da vaga"
+                  >
+                    <Shuffle size={14} />
+                    Sortear Pergunta ({allAvailableQuestions.length})
+                  </SimButton>
+                </div>
+              </div>
+
+              {/* Seletor de Pergunta */}
+              <div>
+                <label style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569", display: "block", marginBottom: 6 }}>
+                  Escolha uma pergunta para simular:
+                </label>
+                <select
+                  value={selectedQuestionIndex}
+                  onChange={(e) => {
+                    setSelectedQuestionIndex(Number(e.target.value));
+                    setSimFeedback(null);
+                    setShowGoldenTip(false);
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    borderRadius: 6,
+                    border: "1px solid #cbd5e1",
+                    fontSize: "0.86rem",
+                    color: "#1e293b",
+                    background: "#ffffff",
+                    outline: "none"
+                  }}
+                >
+                  {allAvailableQuestions.map((q, idx) => (
+                    <option key={idx} value={idx}>
+                      [{q.category}] {q.question}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Caixa da Pergunta Atual */}
+              <SimQuestionBox>
+                <div className="label">
+                  <Award size={14} /> Pergunta Selecionada: {currentSimQuestion.category}
+                </div>
+                <div className="question-text">
+                  "{currentSimQuestion.question}"
+                </div>
+
+                {currentSimQuestion.idealAnswer && (
+                  <div style={{ marginTop: 6 }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowGoldenTip((prev) => !prev)}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        color: "#2563eb",
+                        fontSize: "0.78rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                        padding: 0
+                      }}
+                    >
+                      <HelpCircle size={13} />
+                      {showGoldenTip ? "Ocultar o que o avaliador espera" : "👁️ Ver o que o avaliador espera ouvir nesta pergunta"}
+                    </button>
+                    {showGoldenTip && (
+                      <p style={{ margin: "8px 0 0 0", fontSize: "0.82rem", color: "#334155", background: "rgba(255,255,255,0.8)", padding: "10px 12px", borderRadius: 6, border: "1px solid #bfdbfe", lineHeight: 1.5 }}>
+                        <strong>Diretriz esperada:</strong> {currentSimQuestion.idealAnswer}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </SimQuestionBox>
+
+              {/* Campo para o Candidato Digitar a Resposta */}
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <label style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569" }}>
+                    Sua Resposta (Como você falaria na entrevista):
+                  </label>
+                  <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
+                    {simAnswer.trim() ? `${simAnswer.trim().split(/\s+/).length} palavras` : "0 palavras"}
+                  </span>
+                </div>
+                <SimTextarea
+                  placeholder="Ex: No meu histórico na Brasfort e Truly Informática, quando me deparei com essa situação, primeiro atuei na contenção do incidente e mapeamento da causa-raiz. Alinhei com a equipe o cumprimento do SLA..."
+                  value={simAnswer}
+                  onChange={(e) => setSimAnswer(e.target.value)}
+                  disabled={isEvaluating}
+                />
+              </div>
+
+              {/* Barra de Ações */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+                <SimButton
+                  type="button"
+                  $variant="outline"
+                  onClick={() => {
+                    setSimAnswer("");
+                    setSimFeedback(null);
+                  }}
+                  disabled={isEvaluating || (!simAnswer && !simFeedback)}
+                >
+                  <RotateCcw size={14} />
+                  Limpar Resposta
+                </SimButton>
+
+                <SimButton
+                  type="button"
+                  $variant="primary"
+                  onClick={handleEvaluateAnswer}
+                  disabled={isEvaluating || !simAnswer.trim()}
+                >
+                  {isEvaluating ? (
+                    <>
+                      <Sparkles size={16} />
+                      Avaliando com IA...
+                    </>
+                  ) : (
+                    <>
+                      <Send size={15} />
+                      🚀 Avaliar Minha Resposta com IA
+                    </>
+                  )}
+                </SimButton>
+              </div>
+
+              {/* Painel de Feedback da IA */}
+              {simFeedback && (
+                <div
+                  style={{
+                    marginTop: 10,
+                    background: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: 10,
+                    padding: 18,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 14
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <ScoreBadge $score={simFeedback.score}>
+                        <Award size={16} />
+                        Nota: {simFeedback.score}/100
+                      </ScoreBadge>
+                      <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1e293b" }}>
+                        Veredito: {simFeedback.verdict}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: "0.75rem", color: "#64748b" }}>
+                      Avaliado via Gemini Flash
+                    </span>
+                  </div>
+
+                  {/* Grid de Pontos Fortes e O que Melhorar */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+                    {/* Pontos Fortes */}
+                    <div style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: 8, padding: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#065f46", fontWeight: 700, fontSize: "0.82rem", marginBottom: 8 }}>
+                        <CheckCircle2 size={16} />
+                        Pontos Fortes Identificados:
+                      </div>
+                      <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4, fontSize: "0.8rem", color: "#047857" }}>
+                        {simFeedback.strengths.map((st, i) => (
+                          <li key={i}>{st}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Dicas de Melhoria */}
+                    <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, padding: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#92400e", fontWeight: 700, fontSize: "0.82rem", marginBottom: 8 }}>
+                        <AlertTriangle size={16} />
+                        O que Faltou / Dica de Ouro:
+                      </div>
+                      <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4, fontSize: "0.8rem", color: "#b45309" }}>
+                        {simFeedback.improvements.map((imp, i) => (
+                          <li key={i}>{imp}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Refinamento Sênior */}
+                  {simFeedback.seniorRefinement && (
+                    <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: 14 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#1e40af", fontWeight: 700, fontSize: "0.83rem" }}>
+                          <Sparkles size={15} />
+                          Como Soar como um Especialista Sênior (Exemplo em 1ª Pessoa):
+                        </div>
+                        <CopyButton
+                          type="button"
+                          onClick={() => handleCopy("seniorRefinement", simFeedback.seniorRefinement)}
+                        >
+                          {copiedKey === "seniorRefinement" ? <Check size={12} color="#16a34a" /> : <Copy size={12} />}
+                          {copiedKey === "seniorRefinement" ? "Copiado!" : "Copiar Resposta"}
+                        </CopyButton>
+                      </div>
+                      <p style={{ margin: 0, fontSize: "0.84rem", color: "#1e3a8a", lineHeight: 1.55, fontStyle: "italic" }}>
+                        "{simFeedback.seniorRefinement}"
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </SimCard>
           )}
         </ModalContent>
       </ModalCard>

@@ -10,6 +10,7 @@ import { ResumeVersionsRepository } from "../infrastructure/supabase/ResumeVersi
 import { JobApplicationsRepository, type ApplicationItem } from "../infrastructure/supabase/JobApplicationsRepository";
 import type { TailoredResumeResult } from "../domain/rules/ResumeTailoringEngine";
 import type { ApplicationStatus } from "../shared/types/database.types";
+import type { ResumeTemplateType } from "../presentation/templates/ResumePDFTemplate";
 import { Loader2 } from "lucide-react";
 
 // Code-Splitting: Carregamento sob demanda das abas mais pesadas
@@ -63,6 +64,7 @@ export const Home: React.FC = () => {
   const [applications, setApplications] = useState<ApplicationItem[]>([]);
   const [selectedAppForEmail, setSelectedAppForEmail] = useState<ApplicationItem | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [resumeTemplate, setResumeTemplate] = useState<ResumeTemplateType>("geometric");
 
   // Carrega ou inicializa o perfil mestre sincronizado no Supabase
   useEffect(() => {
@@ -85,6 +87,32 @@ export const Home: React.FC = () => {
       );
     } catch {
       showError("Não foi possível atualizar o status da candidatura no banco de dados.", "Erro ao Atualizar");
+    }
+  };
+
+  const handleDeleteApplication = async (appId: string) => {
+    try {
+      if (user?.id) {
+        await JobApplicationsRepository.deleteApplication(appId);
+      }
+      setApplications((prev) => prev.filter((a) => a.id !== appId));
+      showSuccess("Candidatura excluída com sucesso do CRM.", "Candidatura Removida");
+    } catch {
+      showError("Não foi possível excluir a candidatura.", "Erro ao Excluir");
+    }
+  };
+
+  const handleUpdateNotes = async (appId: string, notes: string) => {
+    try {
+      if (user?.id) {
+        await JobApplicationsRepository.updateNotes(appId, notes);
+      }
+      setApplications((prev) =>
+        prev.map((a) => (a.id === appId ? { ...a, notes } : a))
+      );
+      showSuccess("Anotações da candidatura atualizadas!", "Anotações Salvas");
+    } catch {
+      showError("Não foi possível salvar as anotações.", "Erro ao Salvar");
     }
   };
 
@@ -162,13 +190,6 @@ export const Home: React.FC = () => {
 
     if (user?.id) {
       try {
-        await ResumeVersionsRepository.saveVersion({
-          userId: user.id,
-          content: tailoredResult.tailoredResume,
-          atsScore: jobDetails?.analysis?.matchScores?.overall || 92,
-          validationReport: tailoredResult.validationReport,
-        });
-
         const created: any = await JobApplicationsRepository.createApplication({
           userId: user.id,
           jobTitle: jobDetails?.jobTitle || "Analista de Suporte N2/N3",
@@ -178,11 +199,21 @@ export const Home: React.FC = () => {
           analysis: jobDetails?.analysis,
         });
 
-        if (created && created.id) {
+        const createdId = created?.id;
+
+        await ResumeVersionsRepository.saveVersion({
+          userId: user.id,
+          applicationId: createdId || undefined,
+          content: tailoredResult.tailoredResume,
+          atsScore: jobDetails?.analysis?.matchScores?.overall || 92,
+          validationReport: tailoredResult.validationReport,
+        });
+
+        if (createdId) {
           setApplications((prev) =>
             prev.map((a) =>
               a.id === newAppItem.id
-                ? { ...a, id: created.id, tailored_resume: tailoredResult.tailoredResume }
+                ? { ...a, id: createdId, tailored_resume: tailoredResult.tailoredResume }
                 : a
             )
           );
@@ -263,6 +294,8 @@ export const Home: React.FC = () => {
       masterResume={masterResume}
       activeResume={previewResume}
       activeResumeTitle={activeResumeTitle}
+      template={resumeTemplate}
+      onTemplateChange={setResumeTemplate}
       onRestoreBase={handleRestoreBase}
       applicationsCount={applications.length}
       visibleSections={visibleSections}
@@ -275,6 +308,8 @@ export const Home: React.FC = () => {
             masterProfile={masterResume}
             onStatusChange={handleStatusChange}
             onSendEmail={handleOpenEmailWithApp}
+            onDeleteApplication={handleDeleteApplication}
+            onUpdateNotes={handleUpdateNotes}
           />
         ) : currentTab === "portals" ? (
           <JobPortalsView applications={applications} />
@@ -309,6 +344,8 @@ export const Home: React.FC = () => {
         ) : (
           <ResumeCanvas
             data={previewResume}
+            template={resumeTemplate}
+            onTemplateChange={setResumeTemplate}
             visibleSections={visibleSections}
           />
         )}
