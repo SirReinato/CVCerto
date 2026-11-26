@@ -233,6 +233,7 @@ CVCerto/
 │           └── filters/deterministicFilter.ts
 ├── tests/                     # Testes funcionais e fluxos E2E com Playwright
 │   └── e2e/
+│       ├── radar.spec.ts      # Validação E2E do Radar Diário de Vagas IA (filtros, descarte, Kanban, JobAnalyzer)
 │       └── rotas.spec.ts      # Validação funcional das rotas públicas/protegidas e renderização
 └── src/
     ├── main.tsx               # Bootstrap da aplicação + registro do Service Worker (PWA)
@@ -378,7 +379,7 @@ Como este projeto pode ser executado em diferentes computadores, sistemas operac
 | **Reutilização Global Ativa** | Sim (não requer downloads adicionais no `node_modules`) |
 
 ### 2. Configuração (`playwright.config.ts`)
-O projeto utiliza `playwright.config.ts` apontando para `./tests/e2e`, `baseURL: 'http://localhost:5173'`, `headless: true` e `webServer` com `npm run dev`.
+O projeto utiliza `playwright.config.ts` apontando para `./tests/e2e`, `baseURL: 'http://localhost:5179'`, `headless: true` e `webServer` com `npm run dev -- --port 5179`.
 
 ### 3. Aplicação Inteligente: Quando (e Quando Não) Escrever Testes Funcionais
 * ❌ **NÃO criar testes funcionais para:** ajustes cosméticos de styled-components, textos estáticos ou funções utilitárias puras simples.
@@ -462,3 +463,4 @@ Antes de considerar qualquer tarefa ou resposta como concluída, o agente DEVE v
 | 2026-11-26 | Agente IA | **SIR-177 (Fase 4 — Radar Diário IA):** Tipagem em `database.types.ts`, criação de `DailyJobRadar.ts` e `DailyJobRadarRepository.ts`, suporte a `status` opcional em `JobApplicationsRepository.ts` e validação `isSafeHttpUrl` em `popupLauncher.ts`. |
 | 2026-11-26 | Agente IA | **SIR-178 (Fase 3 — Radar Diário IA):** Criação da Edge Function `supabase/functions/daily-ai-jobs-radar/index.ts` com autenticação JWT, guard de `master_facts` vazio (`missing_profile`), trava atômica em `America/Sao_Paulo`, deduplicação contra `public.jobs` e triagem em lote único (até 12 vagas) no Gemini + Zod. |
 | 2026-11-26 | Agente IA | **SIR-179 (Fase 5 — Radar Diário IA):** Criação de `DailyAiJobsRadar.tsx` (`*Stl` + `theme.ts`), atualização dos 5 `searchUrl` de `JobPortalsView.tsx` para IA, suporte a `initialDraft`/`workModel` consume-once em `JobAnalyzer.tsx` e integração com `Home.tsx` (`rascunho` + sync Kanban). |
+| 2026-11-26 | Agente IA | **SIR-180 (Fase 6 — Radar Diário IA):** Criação de `tests/e2e/radar.spec.ts` (Playwright E2E com sessão e rotas Supabase mockadas), exposição da coluna `Rascunho` em `ApplicationsKanban.tsx`, documentação do Radar IA em `README.md` e sincronização final de `AGENTS.md` + `graphify`. |

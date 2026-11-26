@@ -22,6 +22,12 @@ Aplicação web (SPA/PWA) para gestão de currículo mestre ("Base da Verdade"),
    npm run dev
    ```
 
+## Radar Diário de Vagas IA
+
+A aba **Portais de Vagas** inclui o módulo **Radar Diário de Vagas IA**, que consulta oportunidades recentes via Edge Function (`daily-ai-jobs-radar`), aplica filtro determinístico em PT-BR (Remoto Brasil e Presencial/Híbrido em Brasília-DF) e realiza triagem preliminar em lote único via Gemini contra a Base da Verdade do usuário, permitindo enviar a vaga para o **JobAnalyzer** ou salvá-la como **Rascunho** no **CRM Candidaturas**.
+
+> **Segurança (Edge Secrets):** As credenciais `ADZUNA_APP_ID`, `ADZUNA_APP_KEY` e `GEMINI_API_KEY` devem ser configuradas **exclusivamente** nos Secrets das Edge Functions do Supabase (nunca com prefixo `VITE_`).
+
 ## Scripts Disponíveis
 
 - `npm run dev` — Inicia o servidor Vite em modo desenvolvimento
