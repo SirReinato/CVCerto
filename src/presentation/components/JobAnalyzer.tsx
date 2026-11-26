@@ -1,14 +1,18 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled, { keyframes } from "styled-components";
 import { Sparkles, AlertTriangle, Target, Briefcase, FileSearch, ArrowRightCircle, ShieldCheck, Hourglass } from "lucide-react";
 import type { ResumeData } from "../../domain/entities/Resume";
 import type { JobAnalysis } from "../../domain/entities/JobAnalysis";
+import type { RadarJobDraft } from "../../domain/entities/DailyJobRadar";
+import type { WorkModel } from "../../shared/types/database.types";
 import { AiJobAnalysisService } from "../../infrastructure/ai/AiJobAnalysisService";
 import { ResumeTailoringEngine, type TailoredResumeResult } from "../../domain/rules/ResumeTailoringEngine";
 import { useToast } from "../../context/ToastContext";
 
 interface JobAnalyzerProps {
   masterProfile: ResumeData;
+  initialDraft?: RadarJobDraft | null;
+  onDraftConsumed?: () => void;
   onAnalysisComplete?: (analysis: JobAnalysis) => void;
   onGenerateResume?: (
     tailoredResult: TailoredResumeResult,
@@ -17,6 +21,7 @@ interface JobAnalyzerProps {
       companyName: string;
       jobDescription: string;
       sourceUrl?: string;
+      workModel?: WorkModel;
       analysis: JobAnalysis;
     }
   ) => void;
@@ -235,16 +240,25 @@ const TagCloud = styled.div`
 
 export const JobAnalyzer: React.FC<JobAnalyzerProps> = ({
   masterProfile,
+  initialDraft,
+  onDraftConsumed,
   onAnalysisComplete,
   onGenerateResume,
 }) => {
   const { showError } = useToast();
-  const [jobTitle, setJobTitle] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [sourceUrl, setSourceUrl] = useState("");
-  const [jobDescription, setJobDescription] = useState("");
+  const [jobTitle, setJobTitle] = useState(() => initialDraft?.jobTitle ?? "");
+  const [companyName, setCompanyName] = useState(() => initialDraft?.companyName ?? "");
+  const [sourceUrl, setSourceUrl] = useState(() => initialDraft?.sourceUrl ?? "");
+  const [jobDescription, setJobDescription] = useState(() => initialDraft?.jobDescription ?? "");
+  const [draftWorkModel] = useState<WorkModel | undefined>(() => initialDraft?.workModel);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<JobAnalysis | null>(null);
+
+  useEffect(() => {
+    if (initialDraft && onDraftConsumed) {
+      onDraftConsumed();
+    }
+  }, [initialDraft, onDraftConsumed]);
 
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -483,6 +497,7 @@ export const JobAnalyzer: React.FC<JobAnalyzerProps> = ({
                     companyName: companyName || analysisResult.companyName || "Empresa Confidencial",
                     jobDescription,
                     sourceUrl: sourceUrl.trim() || undefined,
+                    workModel: draftWorkModel,
                     analysis: analysisResult,
                   });
                 }}

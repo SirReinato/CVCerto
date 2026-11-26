@@ -9,7 +9,8 @@ import { WorkspaceLayout } from "../presentation/components/WorkspaceLayout";
 import { ResumeVersionsRepository } from "../infrastructure/supabase/ResumeVersionsRepository";
 import { JobApplicationsRepository, type ApplicationItem } from "../infrastructure/supabase/JobApplicationsRepository";
 import type { TailoredResumeResult } from "../domain/rules/ResumeTailoringEngine";
-import type { ApplicationStatus } from "../shared/types/database.types";
+import type { DailyRadarItem, RadarJobDraft } from "../domain/entities/DailyJobRadar";
+import type { ApplicationStatus, WorkModel } from "../shared/types/database.types";
 import type { ResumeTemplateType } from "../presentation/templates/ResumePDFTemplate";
 import { Loader2 } from "lucide-react";
 
@@ -65,6 +66,7 @@ export const Home: React.FC = () => {
   const [selectedAppForEmail, setSelectedAppForEmail] = useState<ApplicationItem | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [resumeTemplate, setResumeTemplate] = useState<ResumeTemplateType>("geometric");
+  const [analyzerDraft, setAnalyzerDraft] = useState<RadarJobDraft | null>(null);
 
   // Carrega ou inicializa o perfil mestre sincronizado no Supabase
   useEffect(() => {
@@ -143,6 +145,7 @@ export const Home: React.FC = () => {
       companyName: string;
       jobDescription: string;
       sourceUrl?: string;
+      workModel?: WorkModel;
       analysis: any;
     }
   ) => {
@@ -168,7 +171,7 @@ export const Home: React.FC = () => {
       match_overall: jobDetails?.analysis?.matchScores?.overall || 90,
       match_technical: jobDetails?.analysis?.matchScores?.technical || 92,
       match_behavioral: jobDetails?.analysis?.matchScores?.behavioral || 88,
-      work_model: "hibrido",
+      work_model: jobDetails?.workModel || "hibrido",
       salary_offered: null,
       notes: tailoredResult.atsOptimizationSummary,
       created_at: new Date().toISOString(),
@@ -196,6 +199,7 @@ export const Home: React.FC = () => {
           companyName: jobDetails?.companyName || "Empresa Cadastrada",
           jobDescription: jobDetails?.jobDescription || tailoredResult.atsOptimizationSummary,
           sourceUrl: jobDetails?.sourceUrl,
+          workModel: jobDetails?.workModel,
           analysis: jobDetails?.analysis,
         });
 
@@ -258,6 +262,31 @@ export const Home: React.FC = () => {
     setCurrentTab("email");
   };
 
+  const handleSaveRadarToKanban = async (item: DailyRadarItem): Promise<string> => {
+    if (!user?.id) {
+      throw new Error("Usuário não autenticado.");
+    }
+    const created = await JobApplicationsRepository.createApplication({
+      userId: user.id,
+      jobTitle: item.title,
+      companyName: item.company_name,
+      jobDescription: item.summary_snippet,
+      sourceUrl: item.source_url,
+      workModel: item.work_model,
+      status: "rascunho",
+      notes: item.adaptability_notes || undefined,
+    });
+    const refreshed = await JobApplicationsRepository.listApplications(user.id);
+    setApplications(refreshed);
+    showSuccess(`"${item.title}" salva no Kanban como rascunho.`, "Vaga Salva no Kanban");
+    return (created as { id: string }).id;
+  };
+
+  const handleSendRadarToAnalyzer = (draft: RadarJobDraft) => {
+    setAnalyzerDraft(draft);
+    setCurrentTab("analyze");
+  };
+
   const handleSaveNewSkill = async (updated: ResumeData, skillTitle: string) => {
     if (!user?.id) {
       setMasterResume(updated);
@@ -312,7 +341,13 @@ export const Home: React.FC = () => {
             onUpdateNotes={handleUpdateNotes}
           />
         ) : currentTab === "portals" ? (
-          <JobPortalsView applications={applications} />
+          <JobPortalsView
+            applications={applications}
+            userId={user?.id || ""}
+            onSaveRadarToKanban={handleSaveRadarToKanban}
+            onSendRadarToAnalyzer={handleSendRadarToAnalyzer}
+            onGoToProfile={() => setCurrentTab("edit")}
+          />
         ) : currentTab === "metrics" ? (
           <DashboardMetrics applications={applications} />
         ) : currentTab === "email" ? (
@@ -327,6 +362,8 @@ export const Home: React.FC = () => {
         ) : currentTab === "analyze" ? (
           <JobAnalyzer
             masterProfile={masterResume}
+            initialDraft={analyzerDraft}
+            onDraftConsumed={() => setAnalyzerDraft(null)}
             onGenerateResume={handleGenerateTailored}
           />
         ) : currentTab === "edit" ? (

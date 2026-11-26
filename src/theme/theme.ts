@@ -129,6 +129,13 @@ export const theme = {
   },
 };
 
+export type AppTheme = typeof theme;
+
+declare module "styled-components" {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  export interface DefaultTheme extends AppTheme {}
+}
+
 // Títulos e Parágrafos
 
 export const TitulosPrincipaisStl = styled.h1<{ $fundoEscuro?: boolean }>`

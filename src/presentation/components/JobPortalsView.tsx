@@ -13,11 +13,17 @@ import {
 } from "lucide-react";
 import { openSideBrowser } from "../../shared/utils/popupLauncher";
 import type { ApplicationItem } from "../../infrastructure/supabase/JobApplicationsRepository";
+import type { DailyRadarItem, RadarJobDraft } from "../../domain/entities/DailyJobRadar";
+import { DailyAiJobsRadar } from "./DailyAiJobsRadar";
 import { useToast } from "../../context/ToastContext";
 
 interface JobPortalsViewProps {
   applications: ApplicationItem[];
   onUpdateJobUrl?: (applicationId: string, url: string) => void;
+  userId?: string;
+  onSaveRadarToKanban?: (item: DailyRadarItem) => Promise<string>;
+  onSendRadarToAnalyzer?: (draft: RadarJobDraft) => void;
+  onGoToProfile?: () => void;
 }
 
 interface PortalInfo {
@@ -43,7 +49,7 @@ const PORTALS: PortalInfo[] = [
     badgeColor: "#0055ff",
     description: "Acompanhe testes de perfil, fit cultural, etapas de triagem e feedbacks das suas inscrições na Gupy.",
     trackingUrl: "https://login.gupy.io/candidates/signin",
-    searchUrl: "https://portal.gupy.io/job-search?jobName=Suporte",
+    searchUrl: "https://portal.gupy.io/job-search?jobName=Inteligencia%20Artificial",
     logoText: "GUPY",
     logoBg: "#0055ff",
     tips: "Faça login com sua conta da Gupy para acompanhar o progresso em tempo real ao lado do seu currículo.",
@@ -56,7 +62,7 @@ const PORTALS: PortalInfo[] = [
     badgeColor: "#0a66c2",
     description: "Verifique o status das vagas onde você enviou candidatura simplificada ou salvou para acompanhar.",
     trackingUrl: "https://www.linkedin.com/jobs/tracker/applied/",
-    searchUrl: "https://www.linkedin.com/jobs/search/?keywords=Suporte%20TI%20N2%20N3",
+    searchUrl: "https://www.linkedin.com/jobs/search/?keywords=Desenvolvedor%20IA%20Inteligencia%20Artificial",
     logoText: "in",
     logoBg: "#0a66c2",
     tips: "Veja quais recrutadores visualizaram sua candidatura e o número de inscritos por vaga.",
@@ -69,7 +75,7 @@ const PORTALS: PortalInfo[] = [
     badgeColor: "#2164f3",
     description: "Monitore respostas de recrutadores, convites para entrevistas e alertas de novas oportunidades.",
     trackingUrl: "https://br.indeed.com/myjobs",
-    searchUrl: "https://br.indeed.com/jobs?q=analista+suporte&l=Brasil",
+    searchUrl: "https://br.indeed.com/jobs?q=desenvolvedor+inteligencia+artificial&l=Brasil",
     logoText: "indeed",
     logoBg: "#2164f3",
     tips: "Ideal para conferir atualizações de candidaturas feitas diretamente pela plataforma.",
@@ -95,7 +101,7 @@ const PORTALS: PortalInfo[] = [
     badgeColor: "#ff5000",
     description: "Acompanhe o envio de currículos, histórico de visualizações por empresas e mensagens de selecionadores.",
     trackingUrl: "https://www.catho.com.br/area-candidato/",
-    searchUrl: "https://www.catho.com.br/vagas/analista-de-suporte/",
+    searchUrl: "https://www.catho.com.br/vagas/inteligencia-artificial/",
     logoText: "CATHO",
     logoBg: "#ff5000",
     tips: "Consulte se as empresas abriram seu currículo nas últimas 48 horas.",
@@ -108,7 +114,7 @@ const PORTALS: PortalInfo[] = [
     badgeColor: "#0083ca",
     description: "Verifique o andamento de processos seletivos, testes online aplicados e convites de empresas parceiras.",
     trackingUrl: "https://www.infojobs.com.br/candidate/",
-    searchUrl: "https://www.infojobs.com.br/vagas-de-emprego-analista-suporte.aspx",
+    searchUrl: "https://www.infojobs.com.br/vagas-de-emprego-inteligencia-artificial.aspx",
     logoText: "IJ",
     logoBg: "#0083ca",
     tips: "Acompanhe o status do processo em etapas (Inscrito, Em Análise, Selecionado).",
@@ -515,6 +521,10 @@ const AppRow = styled.div`
 
 export const JobPortalsView: React.FC<JobPortalsViewProps> = ({
   applications,
+  userId,
+  onSaveRadarToKanban,
+  onSendRadarToAnalyzer,
+  onGoToProfile,
 }) => {
   const { showSuccess, showInfo } = useToast();
   const [customUrl, setCustomUrl] = useState("");
@@ -561,6 +571,15 @@ export const JobPortalsView: React.FC<JobPortalsViewProps> = ({
           </div>
         </div>
       </HeaderBanner>
+
+      {userId && onSaveRadarToKanban && onSendRadarToAnalyzer && (
+        <DailyAiJobsRadar
+          userId={userId}
+          onSaveToKanban={onSaveRadarToKanban}
+          onSendToAnalyzer={onSendRadarToAnalyzer}
+          onGoToProfile={onGoToProfile}
+        />
+      )}
 
       {/* Barra de URL Rápida para qualquer link de vaga */}
       <UrlNavigatorCard>
