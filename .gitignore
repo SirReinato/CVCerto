@@ -26,3 +26,8 @@ dev-dist
 *.njsproj
 *.sln
 *.sw?
+
+# Graphify & Playwright
+graphify-out/
+playwright-report/
+test-results/

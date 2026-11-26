@@ -19,6 +19,79 @@ export const theme = {
       secundario: "#B0BA99",
       escuro: "#4E220F",
     },
+    surface: "#FFFFFF",
+    surfaceAlt: "#F7F1DE",
+    textPrimary: "#4E220F",
+    textSecondary: "#64748B",
+    border: "#E2E8F0",
+    primary: "#9D6638",
+    secondary: "#B0BA99",
+    danger: "#DC2626",
+  },
+  // Padrão de 3 Botões Reutilizáveis
+  buttons: {
+    primary: {
+      background: "#9D6638",
+      color: "#F7F1DE",
+      border: "none",
+      hoverBackground: "#4E220F",
+      padding: "10px 18px",
+      borderRadius: "8px",
+    },
+    secondary: {
+      background: "#B0BA99",
+      color: "#4E220F",
+      border: "1px solid #9D6638",
+      hoverBackground: "#9EA987",
+      padding: "10px 18px",
+      borderRadius: "8px",
+    },
+    outline: {
+      background: "transparent",
+      color: "#9D6638",
+      border: "1px solid #9D6638",
+      hoverBackground: "rgba(157, 102, 56, 0.1)",
+      padding: "10px 18px",
+      borderRadius: "8px",
+    },
+  },
+  // Padrão de Tipografia
+  typography: {
+    title: {
+      fontSize: "2rem",
+      fontWeight: "700",
+      lineHeight: "1.25",
+      color: "#4E220F",
+    },
+    subtitle: {
+      fontSize: "1.25rem",
+      fontWeight: "500",
+      lineHeight: "1.4",
+      color: "#64748B",
+    },
+    body: {
+      fontSize: "1rem",
+      fontWeight: "400",
+      lineHeight: "1.5",
+      color: "#4E220F",
+    },
+    caption: {
+      fontSize: "0.85rem",
+      fontWeight: "400",
+      lineHeight: "1.4",
+      color: "#64748B",
+    },
+  },
+  // Padrão de 2 Gradientes Reutilizáveis
+  gradients: {
+    primary: "linear-gradient(135deg, #9D6638 0%, #4E220F 100%)",
+    surface: "linear-gradient(180deg, #F7F1DE 0%, #FFFFFF 100%)",
+  },
+  borderRadius: {
+    sm: "4px",
+    md: "8px",
+    lg: "12px",
+    full: "9999px",
   },
   fontsFamily: {
     titulos: "'Aldrich', sans-serif",
@@ -55,6 +128,13 @@ export const theme = {
     desktop: "1400px",
   },
 };
+
+export type AppTheme = typeof theme;
+
+declare module "styled-components" {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  export interface DefaultTheme extends AppTheme {}
+}
 
 // Títulos e Parágrafos
 
@@ -114,7 +194,7 @@ export const ParagrafosStl = styled.p<{ $grande?: boolean; $fundoEscuro?: boolea
 
 // Containers
 
-export const ConteinerGeral = styled.div<{ $escuro?: boolean; $secundario?: boolean }>`
+export const ConteinerGeralStl = styled.div<{ $escuro?: boolean; $secundario?: boolean }>`
   width: 100%;
   min-height: 100vh;
   display: flex;

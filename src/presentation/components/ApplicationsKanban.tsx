@@ -32,6 +32,7 @@ interface ApplicationsKanbanProps {
 }
 
 const COLUMNS: Array<{ status: ApplicationStatus; label: string; color: string }> = [
+  { status: "rascunho", label: "Rascunho", color: "#64748b" },
   { status: "curriculo_gerado", label: "Currículo Gerado", color: "#607d8b" },
   { status: "curriculo_enviado", label: "Enviado", color: "#1976d2" },
   { status: "triagem_inicial", label: "Triagem RH", color: "#f57c00" },

@@ -9,12 +9,32 @@ export interface SideBrowserOptions {
   title?: string;
 }
 
-export function openSideBrowser(url: string, _title: string = "Portal de Vagas"): Window | null {
+/**
+ * Valida que uma URL utiliza exclusivamente os protocolos seguros http: ou https:.
+ */
+export function isSafeHttpUrl(rawUrl: string): boolean {
+  try {
+    const parsed = new URL(rawUrl.trim());
+    return parsed.protocol === "https:" || parsed.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+export function openSideBrowser(url: string, title: string = "Portal de Vagas"): Window | null {
+  void title;
   if (!url) return null;
 
-  let targetUrl = url.trim();
-  if (!/^https?:\/\//i.test(targetUrl)) {
-    targetUrl = `https://${targetUrl}`;
+  const trimmed = url.trim();
+  const hasExplicitScheme = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(trimmed);
+
+  if (hasExplicitScheme && !isSafeHttpUrl(trimmed)) {
+    return null;
+  }
+
+  const targetUrl = hasExplicitScheme ? trimmed : `https://${trimmed}`;
+  if (!isSafeHttpUrl(targetUrl)) {
+    return null;
   }
 
   // Largura ideal de mini-browser (entre 520px e 640px)
