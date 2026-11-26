@@ -187,6 +187,8 @@ As variáveis de ambiente do client-side devem seguir o prefixo `VITE_` para fic
 | `VITE_SUPABASE_ANON_KEY` | Chave pública `anon` do Supabase (protegida por RLS) | `your-anon-key` |
 | `VITE_GEMINI_API_KEY` | Chave Gemini client-side *(legado/fallback — migrar chamadas sensíveis para Edge Functions)* | `your-gemini-api-key` |
 | `GEMINI_API_KEY` | Chave Gemini usada exclusivamente no servidor / Supabase Edge Function (`analyze-job`) | `your-gemini-api-key` |
+| `ADZUNA_APP_ID` | ID da aplicação Adzuna BR (EXCLUSIVO Supabase Edge Secrets para `daily-ai-jobs-radar`, nunca `VITE_`) | `your-adzuna-app-id` |
+| `ADZUNA_APP_KEY` | Chave da aplicação Adzuna BR (EXCLUSIVO Supabase Edge Secrets para `daily-ai-jobs-radar`, nunca `VITE_`) | `your-adzuna-app-key` |
 
 > ⚠️ **Princípio de Zero Segredos:** Variáveis prefixadas com `VITE_` são expostas publicamente no bundle JS final do navegador. **NUNCA** coloque service role keys, credenciais administrativas ou tokens privados em variáveis `VITE_`. Priorize sempre o uso de Edge Functions (`supabase/functions/`) para chaves de APIs pagas/privadas como `GEMINI_API_KEY`.
 
@@ -197,7 +199,8 @@ As variáveis de ambiente do client-side devem seguir o prefixo `VITE_` para fic
 ```text
 CVCerto/
 ├── 00-anything/               # Diretório OBRIGATÓRIO para drafts, specs, relatórios EGM e notas
-│   └── 01 - setup agents e base 2026-11-26/ # Subpasta de isolamento da adequação inicial
+│   ├── 01 - setup agents e base 2026-11-26/ # Subpasta de isolamento da adequação inicial
+│   └── 02 - pesquisa-diaria-vagas-ia 2026-11-26/ # Specs, revisões EGM e issues do Radar Diário IA
 ├── .github/
 │   └── copilot-instructions.md # Arquivo ponteiro apontando para AGENTS.md (GitHub Copilot)
 ├── AGENTS.md                  # Ponto de entrada e guia vivo para IAs e agentes (este arquivo)
@@ -219,7 +222,8 @@ CVCerto/
 │   ├── seed.sql
 │   ├── migrations/
 │   │   ├── 001_initial_schema.sql
-│   │   └── 002_storage_setup.sql
+│   │   ├── 002_storage_setup.sql
+│   │   └── 003_daily_job_radar.sql
 │   └── functions/
 │       └── analyze-job/
 │           └── index.ts
@@ -308,6 +312,7 @@ main.tsx (PWA registerSW)
 | **JobAnalysis & Dossiê** | `JobAnalysisSchema`, `FullInterviewDossierSchema` (`src/domain/entities/JobAnalysis.ts`) | `AiJobAnalysisService` + Edge Function `analyze-job` / `JobAnalyzer.tsx` / `InterviewPrepModal.tsx` |
 | **ApplicationItem** | `ApplicationStatus` (`src/shared/types/database.types.ts`) | `JobApplicationsRepository` (Supabase) / `ApplicationsKanban.tsx` / `DashboardMetrics.tsx` |
 | **ResumeVersion** | Versões adaptadas por vaga | `ResumeVersionsRepository` (Supabase) / `ResumeDiffModal.tsx` |
+| **DailyRadarRun / DailyRadarItem** | Execuções diárias e vagas triadas pelo Radar IA | `daily_job_radar_runs` & `daily_job_radar_items` (`003_daily_job_radar.sql`) |
 
 ---
 
@@ -448,3 +453,4 @@ Antes de considerar qualquer tarefa ou resposta como concluída, o agente DEVE v
 | Data | Responsável | Alteração Realizada |
 | ----- | ----- | ----- |
 | 2026-11-26 | Agente IA | Adaptação integral do `AGENTS.md` para o projeto **CVCerto** preservando 100% das regras obrigatórias do modelo base (governança, Git flow, Linear/copiável, `00-anything/`, zero-CSS em `src/`, sufixo `Stl`, `graphify`, Playwright inteligente e SAST/segurança) e adequação da base (`CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, `playwright.config.ts`, `tests/e2e/rotas.spec.ts`, `ThemeProvider` em `App.tsx`, tokens padrão em `theme.ts` e `.gitignore`). |
+| 2026-11-26 | Agente IA | **SIR-175 (Fase 1 — Radar Diário IA):** Criação da migration `supabase/migrations/003_daily_job_radar.sql` (`set_updated_at()`, `daily_job_radar_runs`, `daily_job_radar_items` e políticas RLS), espelhamento em `supabase/consolidated_schema.sql` (17 tabelas) e documentação de `ADZUNA_APP_ID`/`ADZUNA_APP_KEY` em `.env.example`. |
