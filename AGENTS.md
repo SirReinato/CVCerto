@@ -225,8 +225,11 @@ CVCerto/
 │   │   ├── 002_storage_setup.sql
 │   │   └── 003_daily_job_radar.sql
 │   └── functions/
-│       └── analyze-job/
-│           └── index.ts
+│       ├── analyze-job/
+│       │   └── index.ts
+│       └── daily-ai-jobs-radar/
+│           ├── adapters/JobSourceAdapter.ts
+│           └── filters/deterministicFilter.ts
 ├── tests/                     # Testes funcionais e fluxos E2E com Playwright
 │   └── e2e/
 │       └── rotas.spec.ts      # Validação funcional das rotas públicas/protegidas e renderização
@@ -454,3 +457,4 @@ Antes de considerar qualquer tarefa ou resposta como concluída, o agente DEVE v
 | ----- | ----- | ----- |
 | 2026-11-26 | Agente IA | Adaptação integral do `AGENTS.md` para o projeto **CVCerto** preservando 100% das regras obrigatórias do modelo base (governança, Git flow, Linear/copiável, `00-anything/`, zero-CSS em `src/`, sufixo `Stl`, `graphify`, Playwright inteligente e SAST/segurança) e adequação da base (`CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, `playwright.config.ts`, `tests/e2e/rotas.spec.ts`, `ThemeProvider` em `App.tsx`, tokens padrão em `theme.ts` e `.gitignore`). |
 | 2026-11-26 | Agente IA | **SIR-175 (Fase 1 — Radar Diário IA):** Criação da migration `supabase/migrations/003_daily_job_radar.sql` (`set_updated_at()`, `daily_job_radar_runs`, `daily_job_radar_items` e políticas RLS), espelhamento em `supabase/consolidated_schema.sql` (17 tabelas) e documentação de `ADZUNA_APP_ID`/`ADZUNA_APP_KEY` em `.env.example`. |
+| 2026-11-26 | Agente IA | **SIR-176 (Fase 2 — Radar Diário IA):** Criação de `JobSourceAdapter.ts` (`AdzunaBrAdapter` com `what_or`, `sort_by=date`, `max_days_old=7`, `results_per_page=50`, timeout `8000ms`) e `deterministicFilter.ts` (PT-BR, precedência `remoto > hibrido > presencial`, Brasília-DF, validação `http:`/`https:`, `fingerprint` SHA-256 e `deriveFitCategory`). |
