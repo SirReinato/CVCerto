@@ -228,6 +228,7 @@ CVCerto/
 │       ├── analyze-job/
 │       │   └── index.ts
 │       └── daily-ai-jobs-radar/
+│           ├── index.ts
 │           ├── adapters/JobSourceAdapter.ts
 │           └── filters/deterministicFilter.ts
 ├── tests/                     # Testes funcionais e fluxos E2E com Playwright
@@ -459,3 +460,4 @@ Antes de considerar qualquer tarefa ou resposta como concluída, o agente DEVE v
 | 2026-11-26 | Agente IA | **SIR-175 (Fase 1 — Radar Diário IA):** Criação da migration `supabase/migrations/003_daily_job_radar.sql` (`set_updated_at()`, `daily_job_radar_runs`, `daily_job_radar_items` e políticas RLS), espelhamento em `supabase/consolidated_schema.sql` (17 tabelas) e documentação de `ADZUNA_APP_ID`/`ADZUNA_APP_KEY` em `.env.example`. |
 | 2026-11-26 | Agente IA | **SIR-176 (Fase 2 — Radar Diário IA):** Criação de `JobSourceAdapter.ts` (`AdzunaBrAdapter` com `what_or`, `sort_by=date`, `max_days_old=7`, `results_per_page=50`, timeout `8000ms`) e `deterministicFilter.ts` (PT-BR, precedência `remoto > hibrido > presencial`, Brasília-DF, validação `http:`/`https:`, `fingerprint` SHA-256 e `deriveFitCategory`). |
 | 2026-11-26 | Agente IA | **SIR-177 (Fase 4 — Radar Diário IA):** Tipagem em `database.types.ts`, criação de `DailyJobRadar.ts` e `DailyJobRadarRepository.ts`, suporte a `status` opcional em `JobApplicationsRepository.ts` e validação `isSafeHttpUrl` em `popupLauncher.ts`. |
+| 2026-11-26 | Agente IA | **SIR-178 (Fase 3 — Radar Diário IA):** Criação da Edge Function `supabase/functions/daily-ai-jobs-radar/index.ts` com autenticação JWT, guard de `master_facts` vazio (`missing_profile`), trava atômica em `America/Sao_Paulo`, deduplicação contra `public.jobs` e triagem em lote único (até 12 vagas) no Gemini + Zod. |
