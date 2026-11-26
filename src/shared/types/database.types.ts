@@ -30,6 +30,10 @@ export type FactType =
   | 'language'
   | 'personal_info';
 
+export type DailyRadarRunStatus = 'running' | 'completed' | 'failed';
+export type RadarFitCategory = 'aderente' | 'adaptavel' | 'baixa_aderencia';
+export type RadarTriageStatus = 'nova' | 'salva_kanban' | 'descartada';
+
 export interface Database {
   public: {
     Tables: {
@@ -214,6 +218,82 @@ export interface Database {
           sent_at?: string;
         };
         Update: Partial<Database['public']['Tables']['email_logs']['Insert']>;
+      };
+      daily_job_radar_runs: {
+        Row: {
+          id: string;
+          user_id: string;
+          run_date: string;
+          status: DailyRadarRunStatus;
+          source: string;
+          error_message: string | null;
+          started_at: string;
+          finished_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          run_date: string;
+          status: DailyRadarRunStatus;
+          source?: string;
+          error_message?: string | null;
+          started_at?: string;
+          finished_at?: string | null;
+        };
+        Update: Partial<Database['public']['Tables']['daily_job_radar_runs']['Insert']>;
+      };
+      daily_job_radar_items: {
+        Row: {
+          id: string;
+          user_id: string;
+          run_id: string | null;
+          source: string;
+          external_id: string;
+          fingerprint: string;
+          title: string;
+          company_name: string;
+          location_raw: string;
+          work_model: WorkModel;
+          is_brasilia_df: boolean;
+          summary_snippet: string;
+          source_url: string;
+          published_at: string | null;
+          direct_fit_score: number;
+          adaptability_score: number;
+          fit_category: RadarFitCategory;
+          matched_facts: string[];
+          adaptability_notes: string;
+          triage_status: RadarTriageStatus;
+          linked_application_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          run_id?: string | null;
+          source?: string;
+          external_id: string;
+          fingerprint: string;
+          title: string;
+          company_name: string;
+          location_raw: string;
+          work_model: WorkModel;
+          is_brasilia_df?: boolean;
+          summary_snippet: string;
+          source_url: string;
+          published_at?: string | null;
+          direct_fit_score: number;
+          adaptability_score: number;
+          fit_category: RadarFitCategory;
+          matched_facts?: string[];
+          adaptability_notes?: string;
+          triage_status?: RadarTriageStatus;
+          linked_application_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['daily_job_radar_items']['Insert']>;
       };
     };
   };

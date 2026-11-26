@@ -13,6 +13,7 @@ export interface CreateApplicationParams {
   salaryMin?: number;
   salaryMax?: number;
   workModel?: WorkModel;
+  status?: ApplicationStatus;
   recruiterName?: string;
   recruiterEmail?: string;
   notes?: string;
@@ -98,7 +99,7 @@ export const JobApplicationsRepository = {
       .insert({
         user_id: params.userId,
         job_id: (job as any).id,
-        status: "curriculo_gerado",
+        status: params.status || "curriculo_gerado",
         match_overall: params.analysis?.matchScores.overall || null,
         match_technical: params.analysis?.matchScores.technical || null,
         match_behavioral: params.analysis?.matchScores.behavioral || null,

@@ -240,13 +240,13 @@ CVCerto/
     ├── components/            # Componentes utilitários globais (ex.: InstallAppButton.tsx)
     ├── context/               # Contextos React globais (AuthContext.tsx, ToastContext.tsx)
     ├── domain/                # Camada de Domínio (Clean Architecture)
-    │   ├── entities/          # Schemas Zod e tipos (Resume.ts, JobAnalysis.ts)
+    │   ├── entities/          # Schemas Zod e tipos (Resume.ts, JobAnalysis.ts, DailyJobRadar.ts)
     │   ├── rules/             # Regras puras (FactAntiHallucinationValidator.ts, ResumeTailoringEngine.ts)
     │   └── services/          # Serviços de domínio (AtsTextFormatter.ts)
     ├── infrastructure/        # Camada de Infraestrutura (integrações externas)
     │   ├── ai/                # AiJobAnalysisService.ts, AiSkillAnalysisService.ts
     │   ├── mail/              # OutlookGraphMailService.ts
-    │   └── supabase/          # client.ts e repositórios (MasterProfile, ResumeVersions, JobApplications)
+    │   └── supabase/          # client.ts e repositórios (MasterProfile, ResumeVersions, JobApplications, DailyJobRadar)
     ├── presentation/          # Camada de Apresentação
     │   ├── components/        # WorkspaceLayout, ProfileEditor, JobAnalyzer, ApplicationsKanban, DashboardMetrics, ResumeCanvas, etc.
     │   └── templates/         # ResumePDFTemplate.tsx (@react-pdf/renderer)
@@ -458,3 +458,4 @@ Antes de considerar qualquer tarefa ou resposta como concluída, o agente DEVE v
 | 2026-11-26 | Agente IA | Adaptação integral do `AGENTS.md` para o projeto **CVCerto** preservando 100% das regras obrigatórias do modelo base (governança, Git flow, Linear/copiável, `00-anything/`, zero-CSS em `src/`, sufixo `Stl`, `graphify`, Playwright inteligente e SAST/segurança) e adequação da base (`CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, `playwright.config.ts`, `tests/e2e/rotas.spec.ts`, `ThemeProvider` em `App.tsx`, tokens padrão em `theme.ts` e `.gitignore`). |
 | 2026-11-26 | Agente IA | **SIR-175 (Fase 1 — Radar Diário IA):** Criação da migration `supabase/migrations/003_daily_job_radar.sql` (`set_updated_at()`, `daily_job_radar_runs`, `daily_job_radar_items` e políticas RLS), espelhamento em `supabase/consolidated_schema.sql` (17 tabelas) e documentação de `ADZUNA_APP_ID`/`ADZUNA_APP_KEY` em `.env.example`. |
 | 2026-11-26 | Agente IA | **SIR-176 (Fase 2 — Radar Diário IA):** Criação de `JobSourceAdapter.ts` (`AdzunaBrAdapter` com `what_or`, `sort_by=date`, `max_days_old=7`, `results_per_page=50`, timeout `8000ms`) e `deterministicFilter.ts` (PT-BR, precedência `remoto > hibrido > presencial`, Brasília-DF, validação `http:`/`https:`, `fingerprint` SHA-256 e `deriveFitCategory`). |
+| 2026-11-26 | Agente IA | **SIR-177 (Fase 4 — Radar Diário IA):** Tipagem em `database.types.ts`, criação de `DailyJobRadar.ts` e `DailyJobRadarRepository.ts`, suporte a `status` opcional em `JobApplicationsRepository.ts` e validação `isSafeHttpUrl` em `popupLauncher.ts`. |
